@@ -1,5 +1,43 @@
 # Changelog
 
+## [2.2.0] - 2026-01-03
+
+### Added
+
+- `hook_tip_thickness`: Independent variable to control vertical tip width.
+- `hook_basin_thickness`: Dedicated variable for the primary horizontal arm of the hook.
+- `hook_scoop_radius`: Variable to create a smooth internal curve (material addition) in the hook notch.
+- `hook_brace_depth`: Explicit control over horizontal support reach.
+- Trig-based support placement: Braces now follow `hook_angle` while staying flush against the spine.
+
+### Changed
+
+- **REFACTOR**: Simplified `hook_unit` by removing redundant "notch subtraction" in favor of solid geometry construction.
+- **REFACTOR**: Decoupled `hook_brace_thickness` (the hollow wall) from the basin thickness.
+- **FIX**: `spine_length` now correctly calculates total height based on `v_thick` (tilted basin height) and `hook_brace_height`.
+- **FIX**: Implemented geometry safeguards for the scoop to prevent spikes and floating artifacts.
+
+## [2.1.2] - 2026-01-03
+
+### Added
+
+- `hook_brace_depth` parameter to explicitly control the horizontal reach of the support.
+- Trig-based point calculation for braces: Supports now follow the `hook_angle` while maintaining a vertical flush-fit against the spine.
+- `hook_scoop_radius` variable to add a large, smooth fillet (extra material) between the basin and the tip.
+- `hook_notch_radius` for independent control of the spine-side corner transition.
+
+### Changed
+
+- Simplified `hanger_bracket_profile` math: `door_gap` now defines the bridge thickness.
+- Refactored `triangular_brace` into `brace_geometry` to support non-right-triangle polygons.
+- Updated `spine_length` and hook positioning math to account for tilted thickness (`v_thick`).
+- Renamed `hook_inner_radius` to `hook_notch_radius`.
+- Refactored `hook_unit` Boolean logic: The scoop is now unioned **after** the notch subtraction to ensure it renders correctly regardless of notch size.
+
+### Fixed
+
+- **Geometry Guard**: Implemented clamping on `hook_scoop_radius` to prevent it from exceeding hook dimensions, which previously caused "spiking" and floating geometry artifacts.
+
 ## [2.1.1] - 2026-01-03
 
 ### Fixed
