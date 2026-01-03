@@ -1,110 +1,125 @@
 /**
- * Parametric Door Hanger Generator
- * 
+ * Parametric Door Hanger Generator v2.1.1
+ *
  * NOMENCLATURE:
- * - hanger: The whole assembly.
- * - tail: Part touching the back of the door.
- * - spine: Part touching the front of the door (carries the hooks).
+ * - door: The thing the hanger hangs on.
+ * - hanger: The entire assembly.
+ * - tail: The part touching the back of the door.
+ * - spine: The part touching the front of the door (carries the hooks).
+ * - drop: Distance from top of door to the top (tip) of the first hook.
  * - hook: The individual hanger units.
- * - brace: Support material under/inside the hook for weight.
- * - notch: The U-shaped opening of the hook.
- * - basin: The bottom surface of the notch where items rest.
+ * - brace: Triangular support material under the hook arm.
+ * - notch: The U-shaped opening where things hang.
+ * - basin: The bottom surface of the notch (the hook's arm).
  * - tip: The outermost vertical part of the hook.
  */
 
-// --- Hanger Configuration ---
-door_gap = 3;               
-door_thickness = 15.18;     
-hanger_tail_thickness = 3;  
-hanger_width = 20;          
-hanger_tail_length = 30;    
+// --- Hanger & Door Settings ---
+door_thickness = 34;
+door_gap = 3;               // Clearance for trim above door
+hanger_width = 30;          // Width of extrusion (Z)
 
-// --- Hook Configuration ---
-hook_count = 3;             
-hook_depth = 25;            
-hook_offset = 40;           
-hook_thickness = 5;         
-hook_up_height = 12;        
+// --- Tail & Spine Settings ---
+tail_length = 30;
+tail_thickness = 3;
+spine_thickness = 3;
+drop = 30;                  // Top of door to top of first hook
 
-// --- Branding & Styling ---
-hook_inner_radius = 3;      // Rounds the 'basin' and 'notch'
-fillet_radius = 0.8;        // Softens 'tip' and 'spine' edges
-$fn = 32;
+// --- Hook Geometry ---
+hook_count = 2;
+hook_offset = 30;           // Spacing between hook tops
+hook_depth = 30;
+hook_tip_height = 10;
+hook_brace_thickness = 3;   // Thickness of the horizontal basin
+hook_angle = 0;             // Degrees to tilt hook upward
 
-// --- 1. Hook Component ---
-module hook_unit() {
-    // We construct the hook so the "basin" is at Y=0
-    // To prevent the hook from vanishing, we only offset the 'notch' area
+// --- Brace (Support) Settings ---
+hook_brace_height = 20;     // Vertical length of brace down spine
+hook_brace_hollow = true;
+hook_brace_wall = 3;
+
+// --- Styling & Print Prep ---
+hook_inner_radius = 4;      // Rounds the 'notch' interior
+fillet_radius = 1;        // Global border radius (inner and outer)
+$fn = 100;
+
+// --- Calculated Logic ---
+hook_unit_h = hook_tip_height + hook_brace_thickness + hook_brace_height;
+spine_length = drop + ((hook_count - 1) * hook_offset) + hook_brace_thickness + hook_brace_height;
+
+module triangular_brace(h, d, hollow=false, wall=2) {
     difference() {
-        // The raw hook material (Brace + Basin + Tip)
-        union() {
-            // Main horizontal body (Basin/Brace area)
-            translate([0, -hook_thickness])
-                square([hook_depth, hook_thickness]);
-            
-            // Outer vertical part (Tip)
-            translate([hook_depth - hook_thickness, -hook_thickness])
-                square([hook_thickness, hook_up_height + hook_thickness]);
+        polygon([[0,0], [d,0], [0,-h]]);
+        if (hollow) {
+            // Use offset(delta) for mathematically perfect wall inset
+            offset(delta = -wall)
+                polygon([[0,0], [d,0], [0,-h]]);
         }
-        
-        // The Notch (the void where things hang)
-        // We round the notch by applying an offset to the SUBTRACTED shape
-        offset(r = hook_inner_radius)
-        offset(r = -hook_inner_radius)
-        translate([0, 0])
-            square([hook_depth - hook_thickness, hook_up_height + 1]);
     }
 }
 
-// --- 2. Spine & Tail (The Bracket) ---
-module bracket_profile() {
-    // Y=0 is the top of the door.
-    // Negative Y goes down the door.
-    
-    back_x = -hanger_tail_thickness;
+module hook_unit() {
+    // Basin top is at Y=0
+    difference() {
+        union() {
+            // Basin/Arm & Tip
+            rotate([0, 0, -hook_angle]) {
+                translate([0, -hook_brace_thickness])
+                    square([hook_depth, hook_brace_thickness]);
+                translate([hook_depth - spine_thickness, -hook_brace_thickness])
+                    square([spine_thickness, hook_tip_height + hook_brace_thickness]);
+            }
+            // Brace (Support)
+            translate([0, -hook_brace_thickness])
+                triangular_brace(hook_brace_height, hook_depth * 0.7, hook_brace_hollow, hook_brace_wall);
+        }
+
+        // Notch removal with internal rounding
+        offset(r = hook_inner_radius)
+        offset(r = -hook_inner_radius)
+        rotate([0, 0, -hook_angle])
+        translate([-0.1, 0])
+            square([hook_depth - spine_thickness + 0.1, hook_tip_height + 0.1]);
+    }
+}
+
+module hanger_bracket_profile() {
+    back_x = -tail_thickness;
     front_x = door_thickness;
-    spine_x_outer = door_thickness + hanger_tail_thickness;
-    
-    // The top cap sits above the door gap
-    top_y_outer = door_gap + hanger_tail_thickness;
-    top_y_inner = door_gap;
-    
-    // Spine length covers all hooks
-    spine_bottom_y = -(hook_count * hook_offset) - 10;
+    spine_x_outer = door_thickness + spine_thickness;
+    top_y_outer = door_gap + tail_thickness;
 
     polygon(points = [
-        [back_x, -hanger_tail_length], // Bottom of tail
-        [back_x, top_y_outer],         // Top back corner (outer)
-        [spine_x_outer, top_y_outer],  // Top front corner (outer)
-        [spine_x_outer, spine_bottom_y], // Bottom of spine (outer)
-        [front_x, spine_bottom_y],     // Bottom of spine (inner)
-        [front_x, 0],                  // Under top cap (front)
-        [0, 0],                        // Under top cap (back)
-        [0, -hanger_tail_length]       // Bottom of tail (inner)
+        [back_x, -tail_length],
+        [back_x, top_y_outer],
+        [spine_x_outer, top_y_outer],
+        [spine_x_outer, -spine_length],
+        [front_x, -spine_length],
+        [front_x, 0],
+        [0, 0],
+        [0, -tail_length]
     ]);
 }
 
-// --- 3. Hook Iterator ---
-module hook_generator() {
-    spawn_x = door_thickness + hanger_tail_thickness;
-    for (i = [1 : hook_count]) {
-        // Move each hook down the spine
-        translate([spawn_x, -i * hook_offset])
+module iterate_hooks() {
+    spawn_x = door_thickness + spine_thickness;
+    for (i = [0 : hook_count - 1]) {
+        translate([spawn_x, -drop - (i * hook_offset)])
             hook_unit();
     }
 }
 
-// --- 4. Main Assembly ---
-module assembly() {
+module assemble_hanger() {
     linear_extrude(height = hanger_width) {
-        // Global fillet softened to ensure no parts vanish
-        offset(r = fillet_radius) 
-        offset(r = -fillet_radius) 
+        // Dual-Fillet: Rounds internal joints AND external corners
+        offset(r = fillet_radius)
+        offset(r = -fillet_radius * 2)
+        offset(r = fillet_radius)
         union() {
-            bracket_profile();
-            hook_generator();
+            hanger_bracket_profile();
+            iterate_hooks();
         }
     }
 }
 
-assembly();
+assemble_hanger();
