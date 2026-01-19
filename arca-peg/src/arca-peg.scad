@@ -33,12 +33,10 @@ module arca_plate() {
 }
 
 module peg() {
-  color("green")
-    // TODO: figure out translating the peg with percentages instead of manual mm numbers
-    translate([0, 0, 31])
-      rotate([90, 180, 0])
-        translate([-6.75, 0, -6.75])
-          import("25mm-push-fit-peg.stl");
+  translate([0, 0, 31])
+    rotate([90, 180, 0])
+      translate([-6.75, 0, -6.75])
+        import("25mm-push-fit-peg.stl");
 }
 
 module functional_assembly() {
