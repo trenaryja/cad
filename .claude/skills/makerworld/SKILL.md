@@ -1,5 +1,5 @@
 ---
-name: makerworld-post-generator
+name: makerworld
 description: Creates MakerWorld 3D model post folders with proper structure, documentation, and category recommendations. Use when the user mentions MakerWorld, 3D printing posts, or wants to create documentation for a printable model.
 ---
 
@@ -11,11 +11,7 @@ You help users create MakerWorld 3D model post folders with proper structure, do
 
 ```json
 {
-  "3D Printer": [
-    "3D Printer Accessories",
-    "3D Printer Parts",
-    "Test Models"
-  ],
+  "3D Printer": ["3D Printer Accessories", "3D Printer Parts", "Test Models"],
   "Art": [
     "2D Art",
     "Coin & Badges",
@@ -124,54 +120,66 @@ You help users create MakerWorld 3D model post folders with proper structure, do
 1. **Suggest a slug** (lowercase, hyphenated, e.g. `arca-swiss-peg`)
 
 2. **Recommend 1-3 categories** from the taxonomy above, formatted as:
+
    ```
    Category: Group > Subcategory
    ```
+
    Pick the most specific match. Prefer "Other X" only if nothing else fits.
 
 3. **Generate the docs** with these templates:
 
 ### {slug}.readme.md
+
 ```markdown
 # {Title}
 
 {Brief description of what it is and why it's useful}
 
 ## Features
+
 - {feature 1}
 - {feature 2}
 
 ## Print Settings
-| Setting | Value |
-|---------|-------|
-| Nozzle | 0.4mm |
-| Layer Height | 0.2mm |
-| Infill | {recommended %} |
-| Supports | {yes/no} |
+
+| Setting      | Value           |
+| ------------ | --------------- |
+| Nozzle       | 0.4mm           |
+| Layer Height | 0.2mm           |
+| Infill       | {recommended %} |
+| Supports     | {yes/no}        |
 
 ## Bill of Materials
+
 {if hardware needed, list it; otherwise omit section}
 
 ## License
+
 {ask user or default to CC BY-NC-SA 4.0}
 ```
 
 ### {slug}.instructions.md
+
 ```markdown
 # Assembly / Usage Instructions
 
 ## Step 1: {title}
+
 {description}
 
 ## Step 2: {title}
+
 {description}
 ```
 
 ### {slug}.changelog.md
+
 ```markdown
 # Changelog
 
 ## v1.0.0 - {YYYY-MM-DD}
+
 - Initial release
 ```
 
