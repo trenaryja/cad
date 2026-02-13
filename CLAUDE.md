@@ -16,7 +16,30 @@ project-name/
 └── README.md
 ```
 
-### Design Patterns Used
+### .scad File Structure
+
+```scad
+/** Header — 1-3 line description */
+
+// --- Parameter Group ---
+param = value; // [mm] Inline description
+
+// --- Computed ---
+derived = expression;
+
+module helper() { ... }
+
+module assembly() { ... }
+
+assembly();
+```
+
+- `// --- Group ---` sub-headers separate parameter groups and computed values
+- No section banners, no docstrings on modules — names are the documentation
+- Inline `// [mm]` or `// [deg]` unit annotations on parameters
+- File ends with the top-level assembly call, no heading
+
+### Design Patterns
 
 **Side-Profile Extrusion**: Build as 2D profiles (XY plane), then `linear_extrude()`. Optimizes for side printing without overhangs.
 

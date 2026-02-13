@@ -1,29 +1,27 @@
 /**
-* Arca Swiss Plate + Multiboard Peg v1.0.0
-*/
+ * Arca Swiss Plate + Multiboard Peg
+ */
 
 // --- Dimensions ---
-plate_top_width = 32;
-plate_bottom_width = 38;
-plate_height = 5;
-plate_length = 13.5; // Matching peg width for uniform print height
-dovetail_h = 3;
-base_h = plate_height - dovetail_h;
-
-// --- Styling ---
+plate_top_width = 32; // [mm] Top width of dovetail plate
+plate_bottom_width = 38; // [mm] Bottom width of dovetail plate
+plate_height = 5; // [mm] Total plate height
+plate_length = 13.5; // [mm] Plate length (matches peg width)
 $fn = 100;
 
+// --- Computed ---
+dovetail_h = 3; // [mm] Height of the angled dovetail portion
+base_h = plate_height - dovetail_h;
+
 module arca_plate_profile() {
-  polygon(
-    [
-      [-plate_bottom_width / 2, 0],
-      [plate_bottom_width / 2, 0],
-      [plate_bottom_width / 2, base_h],
-      [plate_top_width / 2, plate_height],
-      [-plate_top_width / 2, plate_height],
-      [-plate_bottom_width / 2, base_h],
-    ]
-  );
+  polygon([
+    [-plate_bottom_width / 2, 0],
+    [plate_bottom_width / 2, 0],
+    [plate_bottom_width / 2, base_h],
+    [plate_top_width / 2, plate_height],
+    [-plate_top_width / 2, plate_height],
+    [-plate_bottom_width / 2, base_h],
+  ]);
 }
 
 module arca_plate() {
@@ -39,10 +37,7 @@ module peg() {
         import("25mm-push-fit-peg.stl");
 }
 
-module functional_assembly() {
+rotate([-90, 0, 0]) {
   arca_plate();
   peg();
 }
-
-rotate([-90, 0, 0])
-  functional_assembly();

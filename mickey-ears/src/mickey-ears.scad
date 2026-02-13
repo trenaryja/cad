@@ -1,16 +1,22 @@
-/* [Face Variables] */
-face_diameter = 50;
-face_extrusion_height = 2;
+/**
+ * Mickey Ears Fridge Magnet
+ *
+ * Mickey head silhouette with optional embossed text.
+ */
 
-/* [Text Variables] */
+// --- Face ---
+face_diameter = 50; // [mm] Diameter of the main circle
+face_extrusion_height = 2; // [mm] Thickness of the base
+
+// --- Text ---
 add_text = true;
 text_input = "Disney";
-text_extrusion_height = 1;
+text_extrusion_height = 1; // [mm] Height of raised text
 font = "Waltograph"; // https://www.dafont.com/waltograph.font
-font_size = 13.5;
+font_size = 13.5; // [mm]
 
-/* [Global Variables] */
-scale = 1;
+// --- Global ---
+model_scale = 1; // Overall scale multiplier
 $fn = 100;
 
 module mickey_ears() {
@@ -20,16 +26,13 @@ module mickey_ears() {
   ear_offset_y = face_diameter * 0.559;
   ear_rotation = 325;
 
-  // Face
   circle(d=face_diameter);
 
-  // Left Ear
   translate([-ear_offset_x, ear_offset_y, 0])
     rotate([0, 0, -ear_rotation])
       scale([1, ear_height / ear_width])
         circle(d=ear_width);
 
-  // Right Ear
   translate([ear_offset_x, ear_offset_y, 0])
     rotate([0, 0, ear_rotation])
       scale([1, ear_height / ear_width])
@@ -38,16 +41,10 @@ module mickey_ears() {
 
 module add_text(input) {
   linear_extrude(text_extrusion_height)
-    text(
-      input,
-      size=font_size,
-      font=font,
-      valign="center",
-      halign="center"
-    );
+    text(input, size=font_size, font=font, valign="center", halign="center");
 }
 
-scale([scale, scale]) {
+scale([model_scale, model_scale]) {
   linear_extrude(face_extrusion_height)
     mickey_ears();
   if (add_text)
