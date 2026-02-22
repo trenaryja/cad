@@ -1,14 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Standard orthographic views: name, rotx, roty, rotz
-# Composite layout (2x2): isometric | front
-#                          top       | right
+# 9 views in 3x3 grid: 3 tetrahedral isometrics + 6 orthographic
+# Isometric angles use tetrahedral vertices (109.47° apart) for
+# maximum angular spread, covering all 6 faces with minimum overlap.
+#
+# Layout (3x3):  iso-A (top+front+left) | front  | iso-B (top+back+right)
+#                left                   | top    | right
+#                iso-C (bot+front+right)| bottom | back
 VIEWS=(
-  "isometric 35.26 0 45"
-  "front     90    0 0"
-  "top       0     0 0"
-  "right     90    0 90"
+  "front   90    0 0"
+  "back    90    0 180"
+  "iso-A   54.74 0 315"
+  "bottom  180   0 0"
+  "top     0     0 0"
+  "iso-B   54.74 0 135"
+  "left    90    0 270"
+  "right   90    0 90"
+  "iso-C   125.26 0 45"
 )
 
 IMGSIZE="1024,1024"
@@ -53,9 +62,9 @@ render_project() {
     tiles+=("$tmp")
   done
 
-  # Stitch into 2x2 composite
+  # Stitch into 3x3 composite
   magick montage "${tiles[@]}" \
-    -tile 2x2 -geometry 1024x1024+0+0 \
+    -tile 3x3 -geometry 1024x1024+0+0 \
     "$dir/render.png" 2>/dev/null
 
   rm -rf "$tmpdir"

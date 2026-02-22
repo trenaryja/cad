@@ -11,7 +11,7 @@ project-name/
 ├── src/           # source files (.scad, imported .stl, etc)
 ├── pics/          # photos, reference images (optional)
 ├── {name}.stl     # printable STL (built from default .scad values)
-├── render.png     # 2x2 composite of 4 orthographic views
+├── render.png     # 3x3 composite of 9 views (3 isometric + 6 orthographic)
 ├── CHANGELOG.md
 └── README.md
 ```
@@ -58,7 +58,7 @@ offset(r=R) offset(r=-2*R) offset(r=R) { ... }
 
 ## Scripts
 
-- **`./render.sh [project...]`** — generates `render.png` (2x2 composite: isometric, front, top, right)
+- **`./render.sh [project...]`** — generates `render.png` (3x3 composite: 3 tetrahedral isometrics + 6 orthographic)
 - **`./build.sh [project...]`** — generates `{name}.stl` from default .scad variables
 
 No args = all projects.
@@ -66,9 +66,12 @@ No args = all projects.
 ## Render Layout
 
 ```
-isometric (35.26,0,45) | front (90,0,0)
-top       (0,0,0)      | right (90,0,90)
+iso-A (54.74,0,315) | front  (90,0,0)   | iso-B (54.74,0,135)
+left  (90,0,270)    | top    (0,0,0)     | right (90,0,90)
+iso-C (125.26,0,45) | bottom (180,0,0)   | back  (90,0,180)
 ```
+
+Isometric angles use tetrahedral vertices (109.47° apart) for maximum angular spread.
 
 ## OpenSCAD CLI
 
