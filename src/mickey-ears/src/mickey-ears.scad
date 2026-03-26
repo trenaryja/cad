@@ -17,7 +17,7 @@ font_size = 13.5; // [mm]
 
 // --- Global ---
 model_scale = 1; // Overall scale multiplier
-$fn = 100;
+$fn = 50;
 
 module mickey_ears() {
   ear_width = face_diameter * 0.625;
@@ -48,7 +48,7 @@ scale([model_scale, model_scale]) {
   linear_extrude(face_extrusion_height)
     mickey_ears();
   if (add_text)
-    translate([0, 0, face_extrusion_height])
+    translate([0, 0, face_extrusion_height - 0.0001])
       color("black")
         add_text(text_input);
 }

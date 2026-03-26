@@ -122,19 +122,11 @@ async function renderProject(
 	}
 
 	onProgress(VIEWS.length, total, "montage");
-	await run(
-		"magick",
-		[
-			"montage",
-			...tiles,
-			"-tile",
-			"3x3",
-			"-geometry",
-			"1024x1024+0+0",
-			join(PROJECTS_DIR, project, "render.png"),
-		],
-		true,
+	// Build 3x3 grid using magick append (avoids montage font issues)
+	const rows = [0, 3, 6].map((start) =>
+		["(", ...tiles.slice(start, start + 3), "+append", ")"],
 	);
+	await run("magick", [...rows.flat(), "-append", join(PROJECTS_DIR, project, "render.png")]);
 
 	onProgress(total, total, "done");
 	rmSync(tmp, { recursive: true });

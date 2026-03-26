@@ -23,7 +23,7 @@ span_gap = 0.6; // [mm] Gap between flat faces
 
 // --- Print Tuning ---
 tolerance = 0.0; // [mm] Diameter reduction for fit adjustment
-$fn = 100;
+$fn = 50;
 
 // --- Computed ---
 radius = diameter / 2;
@@ -31,21 +31,27 @@ effective_radius = radius - tolerance;
 tip_radius = max(0, effective_radius - chamfer_depth * tan(chamfer_angle));
 bridge_spacing = length / (bridge_count + 1);
 
-module dowel() {
-  rotate([-90, 0, 0]) {
-    cylinder(h=chamfer_depth, r1=tip_radius, r2=effective_radius);
-    translate([0, 0, chamfer_depth])
-      cylinder(h=length - 2 * chamfer_depth, r=effective_radius);
-    translate([0, 0, length - chamfer_depth])
-      cylinder(h=chamfer_depth, r1=effective_radius, r2=tip_radius);
-  }
+module semicircle(r) {
+  polygon([for (a = [180:360/$fn:360]) [r * cos(a), r * sin(a)]]);
 }
 
 module half_dowel() {
-  intersection() {
-    dowel();
-    translate([-(effective_radius + 1), 0, 0])
-      cube([effective_radius * 2 + 2, length + 1, effective_radius + 1]);
+  rotate([-90, 0, 0]) {
+    // Bottom chamfer
+    hull() {
+      linear_extrude(0.01) semicircle(tip_radius);
+      translate([0, 0, chamfer_depth])
+        linear_extrude(0.01) semicircle(effective_radius);
+    }
+    // Main body
+    translate([0, 0, chamfer_depth])
+      linear_extrude(length - 2 * chamfer_depth) semicircle(effective_radius);
+    // Top chamfer
+    translate([0, 0, length - chamfer_depth]) hull() {
+      linear_extrude(0.01) semicircle(effective_radius);
+      translate([0, 0, chamfer_depth])
+        linear_extrude(0.01) semicircle(tip_radius);
+    }
   }
 }
 

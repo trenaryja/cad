@@ -12,7 +12,7 @@ usbc_corner_r = 0.7; // [mm] Corner radius of the metal tip
 
 // --- Fit ---
 tip_tolerance = 0.05; // [mm] Per-side clearance at slot entry
-taper_angle = 2; // [deg] Slot narrows toward back for friction fit (0=parallel)
+taper_angle = 1; // [deg] Slot narrows toward back for friction fit (0=parallel)
 
 // --- Body ---
 wall = 3; // [mm] Material thickness around each slot
@@ -24,7 +24,7 @@ cap_enabled = false;
 cap_thickness = 1.2; // [mm] Cap thickness
 
 // --- Keyring ---
-keyring_enabled = false;
+keyring_enabled = true;
 keyring_hole_dia = 5; // [mm] Ring wire diameter
 keyring_wall = 1; // [mm] Wall around hole
 
@@ -37,7 +37,7 @@ texture_depth = .5; // [mm] Groove depth
 texture_count = 5; // Number of ridges
 
 // --- Print ---
-$fn = 100;
+$fn = 50;
 
 // --- Computed ---
 tip_w = usbc_width + 2 * tip_tolerance;
@@ -96,7 +96,27 @@ module usbc_cavity() {
   back_h = max(0.1, tip_h - 2 * taper_offset);
   back_r = max(0, min(safe_usbc_r, back_w / 2 - 0.1, back_h / 2 - 0.1));
   cavity_depth = cap_enabled ? usbc_depth + 0.01 : body_d + 0.02;
-  if (taper_angle > 0) {
+  fillet_w = tip_w + 2 * safe_fillet;
+  fillet_h = tip_h + 2 * safe_fillet;
+  fillet_r = max(0, min(safe_usbc_r + safe_fillet, fillet_w / 2 - 0.1, fillet_h / 2 - 0.1));
+  if (safe_fillet > 0) {
+    hull() {
+      translate([0, 0, -0.01])
+        linear_extrude(0.01)
+          rounded_rect(fillet_w, fillet_h, fillet_r);
+      translate([0, 0, safe_fillet])
+        linear_extrude(0.01)
+          rounded_rect(tip_w, tip_h, safe_usbc_r);
+    }
+    hull() {
+      translate([0, 0, safe_fillet])
+        linear_extrude(0.01)
+          rounded_rect(tip_w, tip_h, safe_usbc_r);
+      translate([0, 0, cavity_depth])
+        linear_extrude(0.01)
+          rounded_rect(back_w, back_h, back_r);
+    }
+  } else if (taper_angle > 0) {
     hull() {
       translate([0, 0, -0.01])
         linear_extrude(0.01)
@@ -110,15 +130,6 @@ module usbc_cavity() {
       linear_extrude(cavity_depth)
         rounded_rect(tip_w, tip_h, safe_usbc_r);
   }
-  if (safe_fillet > 0)
-    hull() {
-      translate([0, 0, -0.01])
-        linear_extrude(0.01)
-          offset(delta=safe_fillet) rounded_rect(tip_w, tip_h, safe_usbc_r);
-      translate([0, 0, safe_fillet])
-        linear_extrude(0.01)
-          rounded_rect(tip_w, tip_h, safe_usbc_r);
-    }
 }
 
 module keyring_hole() {
