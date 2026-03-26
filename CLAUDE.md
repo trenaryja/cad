@@ -4,16 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a collection of parametric OpenSCAD models for 3D printing — primarily functional parts (hooks, clips, dowels, brackets, adapters). Prioritize structural strength, print reliability, and mechanical fit over aesthetics. Each project follows a standard structure:
+This is a collection of parametric OpenSCAD models for 3D printing — primarily functional parts (hooks, clips, dowels, brackets, adapters). Prioritize structural strength, print reliability, and mechanical fit over aesthetics. All projects live under `src/`, each following a standard structure:
 
 ```
-project-name/
-├── src/           # source files (.scad, imported .stl, etc)
-├── pics/          # photos, reference images (optional)
-├── {name}.stl     # printable STL (built from default .scad values)
-├── render.png     # 3x3 composite of 9 views (3 isometric + 6 orthographic)
-├── CHANGELOG.md
-└── README.md
+src/
+└── project-name/
+    ├── src/           # source files (.scad, imported .stl, etc)
+    ├── pics/          # photos, reference images (optional)
+    ├── {name}.stl     # printable STL (built from default .scad values)
+    ├── render.png     # 3x3 composite of 9 views (3 isometric + 6 orthographic)
+    ├── CHANGELOG.md
+    └── README.md
 ```
 
 ### .scad File Structure

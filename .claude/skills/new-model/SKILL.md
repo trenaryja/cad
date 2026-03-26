@@ -57,7 +57,7 @@ Also reference the CLAUDE.md conventions for the canonical .scad file structure.
 Create the project directory and all files:
 
 ```
-{name}/
+src/{name}/
 ├── src/
 │   ├── {name}-simple.scad   # Lo-fi version: basic geometry, correct shape
 │   └── {name}.scad           # Hi-fi version: refined with fillets, textures, safeguards
@@ -142,13 +142,13 @@ Follow the pattern from existing projects:
 
 ## Step 4: Render
 
-Run the render script to generate the 2x2 composite preview image for the detailed version:
+Run the render script to generate the 3x3 composite preview image for the detailed version:
 
 ```bash
-cd /Users/justin/Git/cad && ./render.sh {name}
+cd /Users/justin/Git/cad && ./cad.ts --render {name}
 ```
 
-This generates `{name}/render.png` with isometric, front, top, and right views.
+This generates `src/{name}/render.png` with the 3x3 composite view.
 
 Also render the simple version manually for comparison:
 
@@ -157,8 +157,8 @@ cd /Users/justin/Git/cad
 openscad --preview --projection=ortho \
   --imgsize="1024,1024" --viewall --autocenter \
   --colorscheme="Starnight" \
-  --camera="0,0,0,35.26,0,45,0" \
-  -o {name}/render-simple.png {name}/src/{name}-simple.scad
+  --camera="0,0,0,54.74,0,315,0" \
+  -o src/{name}/render-simple.png src/{name}/src/{name}-simple.scad
 ```
 
 ## Step 5: Open in OpenSCAD
@@ -166,8 +166,8 @@ openscad --preview --projection=ortho \
 Open both versions in the OpenSCAD GUI so the user can inspect them:
 
 ```bash
-openscad /Users/justin/Git/cad/{name}/src/{name}.scad &
-openscad /Users/justin/Git/cad/{name}/src/{name}-simple.scad &
+openscad /Users/justin/Git/cad/src/{name}/src/{name}.scad &
+openscad /Users/justin/Git/cad/src/{name}/src/{name}-simple.scad &
 ```
 
 ## Step 6: Present Results

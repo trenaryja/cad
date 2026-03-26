@@ -26,6 +26,7 @@ const IMGSIZE = "1024,1024";
 const COLORSCHEME = "Starnight";
 const MAX_CONCURRENT = 3;
 const ROOT = resolve(import.meta.dir);
+const PROJECTS_DIR = join(ROOT, "src");
 
 // --- Helpers ---
 
@@ -44,15 +45,15 @@ async function prompt<T>(promise: Promise<T | symbol>) {
 }
 
 function discoverProjects() {
-	return readdirSync(ROOT, { withFileTypes: true })
-		.filter((d) => d.isDirectory() && existsSync(join(ROOT, d.name, "src")))
+	return readdirSync(PROJECTS_DIR, { withFileTypes: true })
+		.filter((d) => d.isDirectory() && existsSync(join(PROJECTS_DIR, d.name, "src")))
 		.map((d) => d.name)
-		.filter((name) => readdirSync(join(ROOT, name, "src")).some(isScad))
+		.filter((name) => readdirSync(join(PROJECTS_DIR, name, "src")).some(isScad))
 		.sort();
 }
 
 function findScadFile(project: string) {
-	const srcDir = join(ROOT, project, "src");
+	const srcDir = join(PROJECTS_DIR, project, "src");
 	const file = readdirSync(srcDir).find(isScad);
 	if (!file) throw new Error(`No .scad source found for ${project}`);
 	return join(srcDir, file);
@@ -130,7 +131,7 @@ async function renderProject(
 			"3x3",
 			"-geometry",
 			"1024x1024+0+0",
-			join(ROOT, project, "render.png"),
+			join(PROJECTS_DIR, project, "render.png"),
 		],
 		true,
 	);
@@ -146,7 +147,7 @@ async function buildProject(
 ) {
 	const scad = findScadFile(project);
 	onProgress(0, 1, "building");
-	await run(openscad, ["-o", join(ROOT, project, `${project}.stl`), scad]);
+	await run(openscad, ["-o", join(PROJECTS_DIR, project, `${project}.stl`), scad]);
 	onProgress(1, 1, "done");
 }
 
