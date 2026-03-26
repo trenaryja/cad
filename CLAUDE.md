@@ -58,10 +58,16 @@ offset(r=R) offset(r=-2*R) offset(r=R) { ... }
 
 ## Scripts
 
-- **`./render.sh [project...]`** — generates `render.png` (3x3 composite: 3 tetrahedral isometrics + 6 orthographic)
-- **`./build.sh [project...]`** — generates `{name}.stl` from default .scad variables
+**`./cad.ts`** — unified build & render CLI (requires `bun`). Progressive TUI: flags for non-interactive use, interactive prompts when flags are omitted.
 
-No args = all projects.
+```bash
+./cad.ts --render --build usb-keychain   # render + build one project
+./cad.ts -r -b --all                     # render + build everything
+./cad.ts --build dowel c-clip            # build STLs for two projects
+./cad.ts                                 # interactive: prompts for action + projects
+```
+
+Flags: `--render`/`-r`, `--build`/`-b`, `--all`/`-a`. Runs up to 3 tasks in parallel with progress bars.
 
 ## Render Layout
 
