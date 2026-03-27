@@ -52,6 +52,11 @@ export function cssVarToHex(cssVar: string): string {
 	return cssColorToHex(value)
 }
 
+/** Resolve a color that may be a CSS var name (--color-*) or a plain hex value */
+export function resolveColor(color: string): string {
+	return color.startsWith('--') ? cssVarToHex(color) : color
+}
+
 function readAllColors(): ThemeColors {
 	const colors = { ...DEFAULT_COLORS }
 	for (const cssVar of CSS_VARS) {

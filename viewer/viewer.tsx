@@ -7,7 +7,7 @@ import { discoverProjects, type Project } from './discovery'
 import { useParams } from './hooks/use-params'
 import { usePersistedState } from './hooks/use-persisted-state'
 import { useSceneSettings, type SceneSettings } from './hooks/use-scene-settings'
-import { useThemeColors } from './hooks/use-theme-colors'
+import { resolveColor, useThemeColors } from './hooks/use-theme-colors'
 import { ParamRail } from './param-rail'
 import { ReplicadMesh, StlMesh, ThreeScene } from './three-scene'
 
@@ -325,7 +325,7 @@ function ReplicadViewer({ project, showBuildPlate, wireframe, colors, overrides,
 				{model.bodies.map((body, i) => {
 					const isVisible = bodyState?.visible[body.name] !== false
 					if (!isVisible) return null
-					const bodyColor = bodyState?.colors[body.name] || BODY_COLORS[i % BODY_COLORS.length]
+					const bodyColor = resolveColor(bodyState?.colors[body.name] || BODY_COLORS[i % BODY_COLORS.length])
 					return (
 						<ReplicadMesh
 							key={body.name}

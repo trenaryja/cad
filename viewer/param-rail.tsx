@@ -3,7 +3,7 @@ import { LuBox, LuGalleryHorizontalEnd, LuPanelLeftClose, LuPanelLeftOpen, LuRot
 import type { ParamState } from './hooks/use-params'
 import type { SceneSettings } from './hooks/use-scene-settings'
 import { ENV_PRESETS, MATERIAL_PRESETS, type MaterialPreset } from './hooks/use-scene-settings'
-import { cssVarToHex } from './hooks/use-theme-colors'
+import { cssVarToHex, resolveColor } from './hooks/use-theme-colors'
 import type { Param } from './param-parser'
 import type { BodyState } from './viewer'
 
@@ -63,14 +63,16 @@ const SWATCH_VARS = [
 	{ var: '--color-base-300', label: 'Base 300' },
 ]
 
+interface Swatch { hex: string; label: string; cssVar: string }
+
 /** Read all semantic swatch colors from the current DaisyUI theme */
-function readSwatchColors(): { hex: string; label: string }[] {
-	return SWATCH_VARS.map((s) => ({ hex: cssVarToHex(s.var), label: s.label }))
+function readSwatchColors(): Swatch[] {
+	return SWATCH_VARS.map((s) => ({ hex: cssVarToHex(s.var), label: s.label, cssVar: s.var }))
 }
 
 /** Hook that returns theme-aware swatch hex values, updating on theme change */
 function useSwatchColors() {
-	const [swatches, setSwatches] = useState<{ hex: string; label: string }[]>([])
+	const [swatches, setSwatches] = useState<Swatch[]>([])
 
 	useEffect(() => {
 		setSwatches(readSwatchColors())
@@ -98,7 +100,8 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 			<span className='text-xs font-semibold opacity-60 uppercase tracking-wide px-2 mb-1'>Bodies</span>
 			{bodyState.bodyNames.map((name, i) => {
 				const visible = bodyState.visible[name] !== false
-				const color = bodyState.colors[name] || BODY_COLORS[i % BODY_COLORS.length]
+				const rawColor = bodyState.colors[name] || BODY_COLORS[i % BODY_COLORS.length]
+				const resolvedColor = resolveColor(rawColor)
 				return (
 					<div key={name} className='flex flex-col gap-1.5 px-2 mb-1'>
 						<div className='flex items-center gap-2'>
@@ -112,7 +115,7 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 							<input
 								type='color'
 								className='w-5 h-5 cursor-pointer rounded border-0 p-0'
-								value={color}
+								value={resolvedColor}
 								onChange={(e) => bodyState.setColor(name, e.target.value)}
 							/>
 						</div>
@@ -123,8 +126,8 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 									type='button'
 									title={swatch.label}
 									className='w-4 h-4 rounded-sm border border-base-300 cursor-pointer hover:scale-125 transition-transform'
-									style={{ backgroundColor: swatch.hex, outline: swatch.hex === color ? '2px solid var(--color-primary)' : undefined, outlineOffset: '1px' }}
-									onClick={() => bodyState.setColor(name, swatch.hex)}
+									style={{ backgroundColor: swatch.hex, outline: rawColor === swatch.cssVar ? '2px solid var(--color-primary)' : undefined, outlineOffset: '1px' }}
+									onClick={() => bodyState.setColor(name, swatch.cssVar)}
 								/>
 							))}
 						</div>
