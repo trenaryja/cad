@@ -1,5 +1,5 @@
 import { wrap } from 'comlink'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { BufferGeometry } from 'three'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 import { discoverProjects, type Project } from './discovery'
@@ -26,24 +26,34 @@ function useReplicadModel(modelUrl: string | undefined) {
 	const [mesh, setMesh] = useState<MeshData | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(true)
+	const [version, setVersion] = useState(0)
+	const hasLoaded = useRef(false)
+
+	// Listen for custom HMR event from model-hmr Vite plugin
+	useEffect(() => {
+		if (!import.meta.hot) return
+		import.meta.hot.on('model-update', () => setVersion((v) => v + 1))
+	}, [])
 
 	useEffect(() => {
 		if (!modelUrl) return
-		setLoading(true)
+		if (!hasLoaded.current) setLoading(true)
 		setError(null)
 
 		const worker = getWorker()
+		const url = version > 0 ? `${modelUrl}?v=${version}` : modelUrl
 		worker
-			.buildModelFromImport(modelUrl)
+			.buildModelFromImport(url)
 			.then((data: MeshData) => {
 				setMesh(data)
 				setLoading(false)
+				hasLoaded.current = true
 			})
 			.catch((err: Error) => {
 				setError(err.message)
 				setLoading(false)
 			})
-	}, [modelUrl])
+	}, [modelUrl, version])
 
 	return { mesh, error, loading }
 }
@@ -147,23 +157,20 @@ function ViewerToolbar({
 }) {
 	const [exporting, setExporting] = useState(false)
 
-	const handleExport = useCallback(
-		async (format: 'stl' | 'step') => {
-			if (!project.modelUrl || exporting) return
-			setExporting(true)
-			try {
-				const worker = getWorker()
-				const blob: Blob =
-					format === 'stl' ? await worker.exportSTL(project.modelUrl) : await worker.exportSTEP(project.modelUrl)
-				downloadBlob(blob, `${project.slug}.${format}`)
-			} catch (err) {
-				console.error(`Export failed:`, err)
-			} finally {
-				setExporting(false)
-			}
-		},
-		[project.modelUrl, project.slug, exporting],
-	)
+	const handleExport = async (format: 'stl' | 'step') => {
+		if (!project.modelUrl || exporting) return
+		setExporting(true)
+		try {
+			const worker = getWorker()
+			const blob: Blob =
+				format === 'stl' ? await worker.exportSTL(project.modelUrl) : await worker.exportSTEP(project.modelUrl)
+			downloadBlob(blob, `${project.slug}.${format}`)
+		} catch (err) {
+			console.error(`Export failed:`, err)
+		} finally {
+			setExporting(false)
+		}
+	}
 
 	return (
 		<div className='flex items-center gap-3 bg-base-200 px-4 py-2'>

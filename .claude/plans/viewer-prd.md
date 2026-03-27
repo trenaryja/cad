@@ -138,7 +138,7 @@ Note: `vite-plugin-wasm` and `vite-plugin-top-level-await` are NOT needed — Vi
 
 - [x] `viewer/viewer.tsx` — STL loading path: detect project type, load `{name}.stl` via Three.js STLLoader for .scad projects
 - [x] `viewer/three-scene.tsx` — viewer controls: toggle wireframe, toggle grid, auto-fit to model bounds (via drei `<Bounds>`)
-- [ ] Consider: render.png generation for replicad projects (headless Three.js screenshot or export from viewer)
+- [x] render.png generation for replicad projects via CLI (uses `drawProjection` → SVG → `rsvg-convert` → ImageMagick montage)
 
 **Verification:** ✅
 - OpenSCAD projects render their pre-built STL in 3D viewer
@@ -152,6 +152,13 @@ Note: `vite-plugin-wasm` and `vite-plugin-top-level-await` are NOT needed — Vi
 - [x] **Replicad scaffold skill**: extended `/new-model` skill to scaffold replicad projects with `model.ts` convention
 - [x] **Export**: STL/STEP export buttons in viewer toolbar for replicad models (via worker `blobSTL()`/`blobSTEP()`)
 - [ ] **Parameter UI**: auto-generate sliders from model parameters (parse `// [mm]` annotations) — *deferred: requires model source parsing*
+
+### Phase 5: Live Reload + CLI Rendering (added post-initial implementation)
+
+- [x] **Live-reload with camera persistence**: Vite custom HMR plugin (`modelHmr`) detects model.ts changes, sends custom WebSocket event. Viewer re-evaluates model in worker with cache-busted URL. Camera/orbit position preserved because Canvas stays mounted and `Bounds` no longer has `observe`.
+- [x] **Replicad render.png from CLI**: `cad.ts` discovers both .scad and .ts projects. Replicad rendering uses `drawProjection()` → SVG → `rsvg-convert` → PNG → ImageMagick montage. Same 3x3 grid layout as OpenSCAD. Zero browser dependencies.
+- [x] **Replicad STL build from CLI**: `cad.ts -b` generates STL for replicad projects via `shape.blobSTL()`.
+- [x] **Mixed project support**: CLI handles both project types in parallel. OpenSCAD only required when .scad projects are selected.
 
 ### Tooling (added during implementation)
 
@@ -171,3 +178,6 @@ Work on `feature/viewer` branch. Main branch remains unblocked for OpenSCAD work
 - **Viewer source lives in `viewer/`**: web app code, separate from model projects but same package.json
 - **CSS setup**: `viewer/styles.css` must `@import '@trenaryja/ui/css'` and `@source '../node_modules/@trenaryja/ui'` for Tailwind to scan the UI library
 - **WASM pattern**: use `?url` suffix for `.wasm` imports, `comlink` for worker RPC — no WASM plugins needed
+- **HMR pattern**: Custom Vite plugin (`modelHmr` in vite.config.ts) intercepts model.ts changes and sends `model-update` custom event. Viewer hook listens via `import.meta.hot.on()`.
+- **CLI replicad rendering**: Uses `drawProjection()` (orthographic SVG projections) + `rsvg-convert` + ImageMagick. No browser required. WASM initialized lazily in Bun.
+- **CLI project types**: `discoverProjects()` returns `CLIProject[]` with `{ name, type }`. Actions dispatched by type via `getActionFn()`.

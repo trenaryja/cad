@@ -29,7 +29,7 @@ export function ThreeScene({ children, showGrid = true }: ThreeSceneProps) {
 				<directionalLight position={[-30, -20, 40]} intensity={0.4} />
 				<Environment preset='studio' />
 
-				<Bounds fit clip observe margin={1.5}>
+				<Bounds fit clip margin={1.5}>
 					{children}
 				</Bounds>
 
