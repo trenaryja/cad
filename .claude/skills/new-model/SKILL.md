@@ -1,15 +1,19 @@
 ---
 name: new-model
-description: Scaffolds a new parametric OpenSCAD project in this repo. Creates directory structure, generates an initial .scad design (simple + detailed versions), README, CHANGELOG, renders, and opens in OpenSCAD. Use when the user wants to start a new 3D model.
+description: Scaffolds a new parametric OpenSCAD or replicad project in this repo. Creates directory structure, generates an initial design, README, CHANGELOG, renders, and opens for preview. Use when the user wants to start a new 3D model.
 ---
 
 # New Model Generator
 
-You help the user scaffold and generate a new parametric OpenSCAD model project in this repository.
+You help the user scaffold and generate a new parametric 3D model project in this repository. The project can use either **OpenSCAD** (.scad) or **replicad** (.ts) as the modeling engine.
 
 ## Input
 
 The user provides a project name as an argument (e.g. `/new-model hook-holder`). If no name is given, ask for one. The name should be lowercase and hyphenated.
+
+Also ask (or infer from context) which engine to use:
+- **OpenSCAD** (default): Traditional CSG modeling with `.scad` files
+- **replicad**: TypeScript BREP modeling with `.ts` files — better for fillets, lofts, and complex surfaces. Preview in browser via `./cad.ts dev`
 
 ## Step 1: Interview
 
@@ -187,3 +191,77 @@ Show the user:
 - Clamp radius/tolerance values with `min()`/`max()` to prevent self-intersection
 - The file must end with the top-level assembly call, no trailing comments or headers
 - Test that your generated code is syntactically valid OpenSCAD before writing it
+
+---
+
+## Replicad Projects
+
+If the user chooses **replicad** as the engine, the workflow changes as follows:
+
+### File Structure
+
+```
+src/{name}/
+├── src/
+│   └── model.ts          # replicad TypeScript model
+├── README.md
+└── CHANGELOG.md
+```
+
+### model.ts Convention
+
+```typescript
+/** Brief description of the model */
+
+import { drawRoundedRectangle } from "replicad";
+
+// --- Parameters ---
+const width = 30; // [mm]
+const height = 20; // [mm]
+
+// --- Computed ---
+const halfWidth = width / 2;
+
+// --- Model ---
+export default function main() {
+  // Build and return geometry
+  return drawRoundedRectangle(width, height)
+    .sketchOnPlane()
+    .extrude(10);
+}
+```
+
+Key rules:
+- `export default function main()` must return the geometry — no side effects
+- Parameters at top with `// [mm]` or `// [deg]` annotations
+- Same `// --- Group ---` section headers as .scad files
+- Import only from `"replicad"` — no viewer imports
+
+### Replicad API Quick Reference
+
+Common operations for generating models:
+- `drawRoundedRectangle(w, h, r)` — rounded rect sketch
+- `drawCircle(r)` — circle sketch
+- `draw()` — freeform 2D path (`.hLine()`, `.vLine()`, `.line()`, `.close()`)
+- `.sketchOnPlane(plane?)` — place 2D sketch in 3D (default XY)
+- `.extrude(depth)` — extrude sketch
+- `.fillet(r)` or `.fillet(r, finder)` — fillet edges
+- `.chamfer(d)` — chamfer edges
+- `.shell(thickness, finder)` — hollow out
+- `.cut(other)` — boolean subtract
+- `.fuse(other)` — boolean union
+
+### Preview
+
+Instead of OpenSCAD rendering, tell the user to preview in the browser:
+
+```bash
+./cad.ts dev
+# Then navigate to http://localhost:5173/#/project/{name}
+```
+
+The gallery auto-discovers new `model.ts` files. No render step needed — the browser viewer provides live interactive preview.
+
+### Skip Steps 4-5 (Render/OpenSCAD)
+
+For replicad projects, skip the OpenSCAD render and open steps. The web viewer serves as both preview and render tool.

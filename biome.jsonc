@@ -1,0 +1,34 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.4.9/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"formatter": {
+		"lineWidth": 120
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		},
+		"formatter": {
+			"quoteStyle": "single"
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"semicolons": "asNeeded",
+			"quoteStyle": "single",
+			"jsxQuoteStyle": "single"
+		}
+	},
+	"linter": {
+		"rules": {
+			"style": {
+				// getElementById('root')! is standard React boilerplate — not a real bug risk
+				"noNonNullAssertion": "off"
+			}
+		}
+	}
+}

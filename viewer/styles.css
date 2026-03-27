@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+@import '@trenaryja/ui/css';
+@plugin 'daisyui' {
+	themes: all;
+}
+@source '../node_modules/@trenaryja/ui';
