@@ -28,6 +28,7 @@ export interface Project {
 	thumbnail?: string
 	modelUrl?: string
 	stlUrl?: string
+	sourceUrl?: string
 }
 
 export function discoverProjects(): Project[] {
@@ -42,16 +43,17 @@ export function discoverProjects(): Project[] {
 			slug,
 			type: 'replicad',
 			modelUrl: url as string,
+			sourceUrl: url as string,
 		})
 	}
 
 	// Discover OpenSCAD projects (.scad files)
-	for (const path of Object.keys(scadModules)) {
+	for (const [path, url] of Object.entries(scadModules)) {
 		const match = path.match(/\.\.\/src\/([^/]+)\/src\/[^/]+\.scad$/)
 		if (!match) continue
 		const slug = match[1]
 		if (!projects.has(slug)) {
-			projects.set(slug, { slug, type: 'openscad' })
+			projects.set(slug, { slug, type: 'openscad', sourceUrl: url as string })
 		}
 	}
 

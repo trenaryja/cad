@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { BufferGeometry } from 'three'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 import { discoverProjects, type Project } from './discovery'
+import { useParams } from './hooks/use-params'
 import { usePersistedState } from './hooks/use-persisted-state'
 import { useThemeColors } from './hooks/use-theme-colors'
 import { ParamRail } from './param-rail'
@@ -21,13 +22,23 @@ function getWorker() {
 	return workerApi
 }
 
-interface MeshData {
+interface BodyMesh {
+	name: string
 	faces: any
 	edges: any
 }
 
-function useReplicadModel(modelUrl: string | undefined) {
-	const [mesh, setMesh] = useState<MeshData | null>(null)
+interface ModelData {
+	multiBody: boolean
+	// Single body
+	faces?: any
+	edges?: any
+	// Multi body
+	bodies?: BodyMesh[]
+}
+
+function useReplicadModel(modelUrl: string | undefined, overrides?: Record<string, number | string | boolean>) {
+	const [model, setModel] = useState<ModelData | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [version, setVersion] = useState(0)
@@ -47,9 +58,9 @@ function useReplicadModel(modelUrl: string | undefined) {
 		const worker = getWorker()
 		const url = version > 0 ? `${modelUrl}?v=${version}` : modelUrl
 		worker
-			.buildModelFromImport(url)
-			.then((data: MeshData) => {
-				setMesh(data)
+			.buildModelFromImport(url, overrides)
+			.then((data: ModelData) => {
+				setModel(data)
 				setLoading(false)
 				hasLoaded.current = true
 			})
@@ -57,30 +68,55 @@ function useReplicadModel(modelUrl: string | undefined) {
 				setError(err.message)
 				setLoading(false)
 			})
-	}, [modelUrl, version])
+	}, [modelUrl, version, overrides])
 
-	return { mesh, error, loading }
+	return { model, error, loading }
 }
 
-function useStlModel(stlUrl: string | undefined) {
+function useStlModel(stlUrl: string | undefined, slug?: string) {
 	const [geometry, setGeometry] = useState<BufferGeometry | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(true)
+	const [version, setVersion] = useState(0)
+	const [building, setBuilding] = useState(false)
+	const hasLoaded = useRef(false)
+
+	// Listen for OpenSCAD HMR events
+	useEffect(() => {
+		if (!import.meta.hot || !slug) return
+		import.meta.hot.on('scad-building', (data: { slug: string }) => {
+			if (data.slug === slug) setBuilding(true)
+		})
+		import.meta.hot.on('scad-update', (data: { slug: string }) => {
+			if (data.slug === slug) {
+				setBuilding(false)
+				setVersion((v) => v + 1)
+			}
+		})
+		import.meta.hot.on('scad-error', (data: { slug: string; error: string }) => {
+			if (data.slug === slug) {
+				setBuilding(false)
+				setError(data.error)
+			}
+		})
+	}, [slug])
 
 	useEffect(() => {
 		if (!stlUrl) {
 			setLoading(false)
 			return
 		}
-		setLoading(true)
+		if (!hasLoaded.current) setLoading(true)
 		setError(null)
 
 		const loader = new STLLoader()
+		const url = version > 0 ? `${stlUrl}?v=${version}` : stlUrl
 		loader.load(
-			stlUrl,
+			url,
 			(geo) => {
 				setGeometry(geo)
 				setLoading(false)
+				hasLoaded.current = true
 			},
 			undefined,
 			(err) => {
@@ -88,9 +124,9 @@ function useStlModel(stlUrl: string | undefined) {
 				setLoading(false)
 			},
 		)
-	}, [stlUrl])
+	}, [stlUrl, version])
 
-	return { geometry, error, loading }
+	return { geometry, error, loading, building }
 }
 
 interface ViewerProps {
@@ -100,10 +136,6 @@ interface ViewerProps {
 export function Viewer({ slug }: ViewerProps) {
 	const projects = discoverProjects()
 	const project = projects.find((p) => p.slug === slug)
-	const colors = useThemeColors()
-
-	const [showBuildPlate, setShowBuildPlate] = usePersistedState('showBuildPlate', true)
-	const [wireframe, setWireframe] = usePersistedState('wireframe', false)
 
 	if (!project) {
 		return (
@@ -118,9 +150,37 @@ export function Viewer({ slug }: ViewerProps) {
 		)
 	}
 
+	return <ProjectViewer project={project} />
+}
+
+export interface BodyState {
+	visible: Record<string, boolean>
+	colors: Record<string, string>
+	setVisible: (name: string, visible: boolean) => void
+	setColor: (name: string, color: string) => void
+	bodyNames: string[]
+}
+
+function ProjectViewer({ project }: { project: Project }) {
+	const colors = useThemeColors()
+	const [showBuildPlate, setShowBuildPlate] = usePersistedState('showBuildPlate', true)
+	const [wireframe, setWireframe] = usePersistedState('wireframe', false)
+	const paramState = useParams(project)
+	const [bodyVisible, setBodyVisible] = useState<Record<string, boolean>>({})
+	const [bodyColors, setBodyColors] = useState<Record<string, string>>({})
+	const [bodyNames, setBodyNames] = useState<string[]>([])
+
+	const bodyState: BodyState = {
+		visible: bodyVisible,
+		colors: bodyColors,
+		setVisible: (name, vis) => setBodyVisible((prev) => ({ ...prev, [name]: vis })),
+		setColor: (name, color) => setBodyColors((prev) => ({ ...prev, [name]: color })),
+		bodyNames,
+	}
+
 	return (
 		<div className='h-screen bg-base-300'>
-			<ParamRail>
+			<ParamRail params={paramState} bodyState={bodyNames.length > 0 ? bodyState : undefined}>
 				<ViewerToolbar
 					project={project}
 					showBuildPlate={showBuildPlate}
@@ -128,11 +188,11 @@ export function Viewer({ slug }: ViewerProps) {
 					onToggleBuildPlate={() => setShowBuildPlate((b) => !b)}
 					onToggleWireframe={() => setWireframe((w) => !w)}
 				/>
-				<div className='flex-1'>
+				<div className='flex-1 relative'>
 					{project.type === 'replicad' ? (
-						<ReplicadViewer project={project} showBuildPlate={showBuildPlate} wireframe={wireframe} colors={colors} />
+						<ReplicadViewer project={project} showBuildPlate={showBuildPlate} wireframe={wireframe} colors={colors} overrides={paramState.overrides} bodyState={bodyState} onBodiesDiscovered={setBodyNames} />
 					) : (
-						<OpenScadViewer project={project} showBuildPlate={showBuildPlate} wireframe={wireframe} colors={colors} />
+						<OpenScadViewer project={project} showBuildPlate={showBuildPlate} wireframe={wireframe} colors={colors} overrides={paramState.overrides} />
 					)}
 				</div>
 			</ParamRail>
@@ -220,10 +280,22 @@ interface SceneViewerProps {
 	showBuildPlate: boolean
 	wireframe: boolean
 	colors: import('./hooks/use-theme-colors').ThemeColors
+	overrides?: Record<string, number | string | boolean>
+	bodyState?: BodyState
+	onBodiesDiscovered?: (names: string[]) => void
 }
 
-function ReplicadViewer({ project, showBuildPlate, wireframe, colors }: SceneViewerProps) {
-	const { mesh, error, loading } = useReplicadModel(project.modelUrl)
+// Palette for multi-body models — cycles through distinct hues
+const BODY_COLORS = ['#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a7896', '#8a965a', '#965a8a']
+
+function ReplicadViewer({ project, showBuildPlate, wireframe, colors, overrides, bodyState, onBodiesDiscovered }: SceneViewerProps) {
+	const { model, error, loading } = useReplicadModel(project.modelUrl, overrides)
+
+	// Report discovered body names to parent
+	useEffect(() => {
+		if (!model?.multiBody || !model.bodies || !onBodiesDiscovered) return
+		onBodiesDiscovered(model.bodies.map((b) => b.name))
+	}, [model, onBodiesDiscovered])
 
 	if (loading) {
 		return (
@@ -242,17 +314,49 @@ function ReplicadViewer({ project, showBuildPlate, wireframe, colors }: SceneVie
 		)
 	}
 
-	if (!mesh) return null
+	if (!model) return null
+
+	if (model.multiBody && model.bodies) {
+		return (
+			<ThreeScene showBuildPlate={showBuildPlate} colors={colors}>
+				{model.bodies.map((body, i) => {
+					const isVisible = bodyState?.visible[body.name] !== false
+					if (!isVisible) return null
+					const bodyColor = bodyState?.colors[body.name] || BODY_COLORS[i % BODY_COLORS.length]
+					return (
+						<ReplicadMesh
+							key={body.name}
+							faces={body.faces}
+							edges={body.edges}
+							wireframe={wireframe}
+							color={bodyColor}
+							edgeColor={colors.base300}
+						/>
+					)
+				})}
+			</ThreeScene>
+		)
+	}
 
 	return (
 		<ThreeScene showBuildPlate={showBuildPlate} colors={colors}>
-			<ReplicadMesh faces={mesh.faces} edges={mesh.edges} wireframe={wireframe} color={colors.baseContent} edgeColor={colors.base300} />
+			<ReplicadMesh faces={model.faces} edges={model.edges} wireframe={wireframe} color={colors.baseContent} edgeColor={colors.base300} />
 		</ThreeScene>
 	)
 }
 
-function OpenScadViewer({ project, showBuildPlate, wireframe, colors }: SceneViewerProps) {
-	const { geometry, error, loading } = useStlModel(project.stlUrl)
+function OpenScadViewer({ project, showBuildPlate, wireframe, colors, overrides }: SceneViewerProps) {
+	const { geometry, error, loading, building } = useStlModel(project.stlUrl, project.slug)
+
+	// Trigger rebuild when param overrides change
+	useEffect(() => {
+		if (!overrides || Object.keys(overrides).length === 0) return
+		fetch('/api/scad-rebuild', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ slug: project.slug, overrides }),
+		}).catch(() => {})
+	}, [overrides, project.slug])
 
 	if (!project.stlUrl) {
 		return (
@@ -279,7 +383,7 @@ function OpenScadViewer({ project, showBuildPlate, wireframe, colors }: SceneVie
 	if (error) {
 		return (
 			<div className='flex h-full items-center justify-center'>
-				<div className='alert alert-error max-w-lg'>{error}</div>
+				<div className='alert alert-error max-w-lg whitespace-pre-wrap'>{error}</div>
 			</div>
 		)
 	}
@@ -287,8 +391,18 @@ function OpenScadViewer({ project, showBuildPlate, wireframe, colors }: SceneVie
 	if (!geometry) return null
 
 	return (
-		<ThreeScene showBuildPlate={showBuildPlate} colors={colors}>
-			<StlMesh geometry={geometry} wireframe={wireframe} color={colors.baseContent} />
-		</ThreeScene>
+		<>
+			{building && (
+				<div className='absolute top-14 left-1/2 -translate-x-1/2 z-10'>
+					<div className='badge badge-warning gap-1'>
+						<span className='loading loading-spinner loading-xs' />
+						Rebuilding...
+					</div>
+				</div>
+			)}
+			<ThreeScene showBuildPlate={showBuildPlate} colors={colors}>
+				<StlMesh geometry={geometry} wireframe={wireframe} color={colors.baseContent} />
+			</ThreeScene>
+		</>
 	)
 }

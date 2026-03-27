@@ -6,10 +6,14 @@ import { drawRoundedRectangle } from 'replicad'
 const width = 30 // [mm]
 const depth = 30 // [mm]
 const height = 20 // [mm]
-const fillet = 3 // [mm]
+const fillet = 10 // [mm]
 
 // --- Model ---
-export default function main() {
-	const shape = drawRoundedRectangle(width, depth, fillet).sketchOnPlane().extrude(height)
+export default function main(overrides?: Record<string, number>) {
+	const w = overrides?.width ?? width
+	const d = overrides?.depth ?? depth
+	const h = overrides?.height ?? height
+	const f = overrides?.fillet ?? fillet
+	const shape = drawRoundedRectangle(w, d, f).sketchOnPlane().extrude(h)
 	return (shape as any).fillet(1.5)
 }
