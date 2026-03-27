@@ -3,6 +3,8 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useRef } from 'react'
 import { syncFaces, syncLines } from 'replicad-threejs-helper'
 import * as THREE from 'three'
+import type { EnvPreset, MaterialPreset } from './hooks/use-scene-settings'
+import { MATERIAL_PRESETS } from './hooks/use-scene-settings'
 import type { ThemeColors } from './hooks/use-theme-colors'
 
 THREE.Object3D.DEFAULT_UP.set(0, 0, 1)
@@ -15,9 +17,11 @@ interface ThreeSceneProps {
 	children: React.ReactNode
 	showBuildPlate?: boolean
 	colors: ThemeColors
+	envPreset?: EnvPreset
+	lightIntensity?: number
 }
 
-export function ThreeScene({ children, showBuildPlate = true, colors }: ThreeSceneProps) {
+export function ThreeScene({ children, showBuildPlate = true, colors, envPreset = 'studio', lightIntensity = 1.2 }: ThreeSceneProps) {
 	return (
 		<Canvas
 			dpr={Math.min(window.devicePixelRatio, 2)}
@@ -27,9 +31,9 @@ export function ThreeScene({ children, showBuildPlate = true, colors }: ThreeSce
 		>
 			<Suspense fallback={null}>
 				<ambientLight intensity={0.6} />
-				<directionalLight position={[50, 80, 60]} intensity={1.2} />
-				<directionalLight position={[-30, -20, 40]} intensity={0.4} />
-				<Environment preset='studio' />
+				<directionalLight position={[50, 80, 60]} intensity={lightIntensity} />
+				<directionalLight position={[-30, -20, 40]} intensity={lightIntensity * 0.33} />
+				<Environment preset={envPreset} />
 
 				<Bounds fit clip margin={1.5}>
 					{children}
@@ -86,9 +90,10 @@ interface ReplicadMeshProps {
 	wireframe?: boolean
 	color?: string
 	edgeColor?: string
+	material?: MaterialPreset
 }
 
-export function ReplicadMesh({ faces, edges, wireframe = false, color, edgeColor }: ReplicadMeshProps) {
+export function ReplicadMesh({ faces, edges, wireframe = false, color, edgeColor, material = 'pla-matte' }: ReplicadMeshProps) {
 	const bodyRef = useRef(new THREE.BufferGeometry())
 	const linesRef = useRef(new THREE.BufferGeometry())
 	const { invalidate } = useThree()
@@ -108,12 +113,18 @@ export function ReplicadMesh({ faces, edges, wireframe = false, color, edgeColor
 		}
 	}, [])
 
+	const mat = MATERIAL_PRESETS[material]
+
 	return (
 		<group>
 			<mesh geometry={bodyRef.current}>
-				<meshStandardMaterial
+				<meshPhysicalMaterial
 					color={color ?? '#5a8296'}
 					wireframe={wireframe}
+					roughness={mat.roughness}
+					metalness={mat.metalness}
+					clearcoat={mat.clearcoat}
+					clearcoatRoughness={mat.clearcoatRoughness}
 					polygonOffset
 					polygonOffsetFactor={2.0}
 					polygonOffsetUnits={1.0}
@@ -130,9 +141,10 @@ interface StlMeshProps {
 	geometry: THREE.BufferGeometry
 	wireframe?: boolean
 	color?: string
+	material?: MaterialPreset
 }
 
-export function StlMesh({ geometry, wireframe = false, color }: StlMeshProps) {
+export function StlMesh({ geometry, wireframe = false, color, material = 'pla-matte' }: StlMeshProps) {
 	const { invalidate } = useThree()
 
 	useEffect(() => {
@@ -140,11 +152,17 @@ export function StlMesh({ geometry, wireframe = false, color }: StlMeshProps) {
 		invalidate()
 	}, [geometry, invalidate])
 
+	const mat = MATERIAL_PRESETS[material]
+
 	return (
 		<mesh geometry={geometry}>
-			<meshStandardMaterial
+			<meshPhysicalMaterial
 				color={color ?? '#5a8296'}
 				wireframe={wireframe}
+				roughness={mat.roughness}
+				metalness={mat.metalness}
+				clearcoat={mat.clearcoat}
+				clearcoatRoughness={mat.clearcoatRoughness}
 				polygonOffset
 				polygonOffsetFactor={2.0}
 				polygonOffsetUnits={1.0}

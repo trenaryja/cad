@@ -179,9 +179,9 @@ Interactive clipping plane for inspecting model internals — like a planar bise
 2.3 Multi-body rendering + per-body      ✅ done
 2.4 3MF export (if needed beyond STEP)
 ---
-3.1 Materials & textures (PBR presets)
-3.2 Lighting controls (env presets, adjustable lights)
-3.3 Richer body color picker (DaisyUI semantic swatches + custom)
+3.1 Materials & textures (PBR presets)     ✅ done
+3.2 Lighting controls (env presets, adjustable lights) ✅ done
+3.3 Richer body color picker (DaisyUI semantic swatches + custom) ✅ done
 3.4 .scad ↔ Replicad translation (Ollama)
 ---
 4.1 Cross-section clipping plane tool

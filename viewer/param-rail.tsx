@@ -1,9 +1,11 @@
-import { LuBox, LuGalleryHorizontalEnd, LuPanelLeftClose, LuPanelLeftOpen, LuRotateCcw, LuSettings } from 'react-icons/lu'
+import { LuBox, LuGalleryHorizontalEnd, LuPanelLeftClose, LuPanelLeftOpen, LuRotateCcw, LuSettings, LuSun } from 'react-icons/lu'
+import type { SceneSettings } from './hooks/use-scene-settings'
+import { ENV_PRESETS, MATERIAL_PRESETS, type MaterialPreset } from './hooks/use-scene-settings'
 import type { ParamState } from './hooks/use-params'
 import type { Param } from './param-parser'
 import type { BodyState } from './viewer'
 
-export function ParamRail({ params, bodyState, children }: { params?: ParamState; bodyState?: BodyState; children: React.ReactNode }) {
+export function ParamRail({ params, bodyState, sceneSettings, children }: { params?: ParamState; bodyState?: BodyState; sceneSettings?: SceneSettings; children: React.ReactNode }) {
 	const hasParams = params && params.params.length > 0
 	const hasOverrides = params && Object.keys(params.overrides).length > 0
 	const hasBodies = bodyState && bodyState.bodyNames.length > 0
@@ -17,6 +19,7 @@ export function ParamRail({ params, bodyState, children }: { params?: ParamState
 					<RailLink href='#/' icon={LuGalleryHorizontalEnd} label='Gallery' />
 					{hasBodies && <RailNavItem icon={LuBox} label='Bodies' />}
 					<RailNavItem icon={LuSettings} label='Parameters' />
+					<RailNavItem icon={LuSun} label='Scene' />
 				</nav>
 				<div className='flex-1 overflow-y-auto p-2 is-rail-close:hidden'>
 					{hasBodies && <BodyControls bodyState={bodyState} />}
@@ -32,12 +35,23 @@ export function ParamRail({ params, bodyState, children }: { params?: ParamState
 							Reset to defaults
 						</button>
 					)}
+					{(hasParams || hasBodies) && <div className='divider my-1' />}
+					{sceneSettings && <SceneControls settings={sceneSettings} />}
 				</div>
 			</aside>
 			<main className='flex-1 flex flex-col min-w-0'>{children}</main>
 		</div>
 	)
 }
+
+// --- Color swatches for multi-body ---
+
+/** DaisyUI-inspired swatch palette + neutral tones */
+const COLOR_SWATCHES = [
+	'#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a7896', '#8a965a', '#965a8a',
+	'#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#34495e',
+	'#ecf0f1', '#bdc3c7', '#95a5a6', '#7f8c8d', '#2c3e50', '#1a1a2e', '#ffffff', '#000000',
+]
 
 // Palette for multi-body — matches BODY_COLORS in viewer.tsx
 const BODY_COLORS = ['#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a7896', '#8a965a', '#965a8a']
@@ -50,26 +64,96 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 				const visible = bodyState.visible[name] !== false
 				const color = bodyState.colors[name] || BODY_COLORS[i % BODY_COLORS.length]
 				return (
-					<div key={name} className='flex items-center gap-2 px-2'>
-						<input
-							type='checkbox'
-							className='toggle toggle-xs'
-							checked={visible}
-							onChange={() => bodyState.setVisible(name, !visible)}
-						/>
-						<input
-							type='color'
-							className='w-5 h-5 cursor-pointer rounded border-0 p-0'
-							value={color}
-							onChange={(e) => bodyState.setColor(name, e.target.value)}
-						/>
-						<span className='text-sm truncate'>{name}</span>
+					<div key={name} className='flex flex-col gap-1 px-2'>
+						<div className='flex items-center gap-2'>
+							<input
+								type='checkbox'
+								className='toggle toggle-xs'
+								checked={visible}
+								onChange={() => bodyState.setVisible(name, !visible)}
+							/>
+							<span className='text-sm truncate flex-1'>{name}</span>
+							<input
+								type='color'
+								className='w-5 h-5 cursor-pointer rounded border-0 p-0'
+								value={color}
+								onChange={(e) => bodyState.setColor(name, e.target.value)}
+							/>
+						</div>
+						<div className='flex flex-wrap gap-0.5 ml-7'>
+							{COLOR_SWATCHES.slice(0, 16).map((swatch) => (
+								<button
+									key={swatch}
+									type='button'
+									className='w-4 h-4 rounded-sm border border-base-300 cursor-pointer hover:scale-125 transition-transform'
+									style={{ backgroundColor: swatch, outline: swatch === color ? '2px solid var(--color-primary)' : undefined, outlineOffset: '1px' }}
+									onClick={() => bodyState.setColor(name, swatch)}
+								/>
+							))}
+						</div>
 					</div>
 				)
 			})}
 		</div>
 	)
 }
+
+// --- Scene controls ---
+
+function SceneControls({ settings }: { settings: SceneSettings }) {
+	return (
+		<div className='flex flex-col gap-3'>
+			<span className='text-xs font-semibold opacity-60 uppercase tracking-wide px-2'>Scene</span>
+
+			{/* Material preset */}
+			<label className='flex flex-col gap-0.5 px-2'>
+				<span className='text-xs opacity-70'>Material</span>
+				<select
+					className='select select-xs select-bordered w-full'
+					value={settings.material}
+					onChange={(e) => settings.setMaterial(e.target.value as MaterialPreset)}
+				>
+					{(Object.keys(MATERIAL_PRESETS) as MaterialPreset[]).map((key) => (
+						<option key={key} value={key}>{MATERIAL_PRESETS[key].label}</option>
+					))}
+				</select>
+			</label>
+
+			{/* Environment preset */}
+			<label className='flex flex-col gap-0.5 px-2'>
+				<span className='text-xs opacity-70'>Environment</span>
+				<select
+					className='select select-xs select-bordered w-full'
+					value={settings.envPreset}
+					onChange={(e) => settings.setEnvPreset(e.target.value as typeof settings.envPreset)}
+				>
+					{ENV_PRESETS.map((p) => (
+						<option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+					))}
+				</select>
+			</label>
+
+			{/* Light intensity */}
+			<label className='flex flex-col gap-0.5 px-2'>
+				<div className='flex items-center justify-between'>
+					<span className='text-xs opacity-70'>Light intensity</span>
+					<span className='text-xs font-mono opacity-50'>{settings.lightIntensity.toFixed(1)}</span>
+				</div>
+				<input
+					type='range'
+					className='range range-xs'
+					min={0}
+					max={3}
+					step={0.1}
+					value={settings.lightIntensity}
+					onChange={(e) => settings.setLightIntensity(parseFloat(e.target.value))}
+				/>
+			</label>
+		</div>
+	)
+}
+
+// --- Parameter controls ---
 
 function ParamControls({ params }: { params: ParamState }) {
 	// Group params by their group name
@@ -160,6 +244,8 @@ function guessStep(value: number): number {
 	const decimals = value.toString().split('.')[1]?.length ?? 0
 	return Math.pow(10, -decimals)
 }
+
+// --- Rail navigation ---
 
 function RailToggle() {
 	return (
