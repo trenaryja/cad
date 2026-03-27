@@ -14,14 +14,16 @@ dovetail_h = 3; // [mm] Height of the angled dovetail portion
 base_h = plate_height - dovetail_h;
 
 module arca_plate_profile() {
-  polygon([
-    [-plate_bottom_width / 2, 0],
-    [plate_bottom_width / 2, 0],
-    [plate_bottom_width / 2, base_h],
-    [plate_top_width / 2, plate_height],
-    [-plate_top_width / 2, plate_height],
-    [-plate_bottom_width / 2, base_h],
-  ]);
+  polygon(
+    [
+      [-plate_bottom_width / 2, 0],
+      [plate_bottom_width / 2, 0],
+      [plate_bottom_width / 2, base_h],
+      [plate_top_width / 2, plate_height],
+      [-plate_top_width / 2, plate_height],
+      [-plate_bottom_width / 2, base_h],
+    ]
+  );
 }
 
 module arca_plate() {
