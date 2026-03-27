@@ -3,25 +3,28 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useRef } from 'react'
 import { syncFaces, syncLines } from 'replicad-threejs-helper'
 import * as THREE from 'three'
+import type { ThemeColors } from './hooks/use-theme-colors'
 
 THREE.Object3D.DEFAULT_UP.set(0, 0, 1)
+
+// Bambu Lab X1C build plate dimensions (mm)
+const BED_X = 256
+const BED_Y = 256
 
 interface ThreeSceneProps {
 	children: React.ReactNode
 	showGrid?: boolean
+	showBuildPlate?: boolean
+	colors: ThemeColors
 }
 
-export interface ThreeSceneHandle {
-	resetCamera: () => void
-}
-
-export function ThreeScene({ children, showGrid = true }: ThreeSceneProps) {
+export function ThreeScene({ children, showGrid = true, showBuildPlate = true, colors }: ThreeSceneProps) {
 	return (
 		<Canvas
 			dpr={Math.min(window.devicePixelRatio, 2)}
 			frameloop='demand'
-			camera={{ position: [40, 60, 50], fov: 45 }}
-			style={{ background: 'oklch(0.15 0 0)' }}
+			camera={{ position: [200, 300, 200], fov: 45 }}
+			style={{ background: colors.base100 }}
 		>
 			<Suspense fallback={null}>
 				<ambientLight intensity={0.6} />
@@ -35,21 +38,60 @@ export function ThreeScene({ children, showGrid = true }: ThreeSceneProps) {
 
 				{showGrid && (
 					<Grid
-						args={[200, 200]}
-						cellSize={5}
+						args={[BED_X, BED_Y]}
+						cellSize={10}
 						cellThickness={0.5}
-						cellColor='#444'
-						sectionSize={25}
+						cellColor={colors.base300}
+						sectionSize={50}
 						sectionThickness={1}
-						sectionColor='#666'
-						fadeDistance={150}
+						sectionColor={colors.base200}
+						fadeDistance={400}
 						fadeStrength={1}
-						infiniteGrid
 					/>
 				)}
+
+				{showBuildPlate && <BuildPlate colors={colors} />}
+
 				<OrbitControls makeDefault />
 			</Suspense>
 		</Canvas>
+	)
+}
+
+function BuildPlate({ colors }: { colors: ThemeColors }) {
+	const { invalidate } = useThree()
+
+	useEffect(() => {
+		invalidate()
+	}, [colors, invalidate])
+
+	return (
+		<group>
+			{/* Semi-transparent bed surface */}
+			<mesh position={[0, 0, -0.1]} rotation={[0, 0, 0]}>
+				<planeGeometry args={[BED_X, BED_Y]} />
+				<meshBasicMaterial color={colors.base200} transparent opacity={0.3} side={THREE.DoubleSide} />
+			</mesh>
+
+			{/* Bed border outline */}
+			<lineLoop>
+				<bufferGeometry>
+					<bufferAttribute
+						attach='attributes-position'
+						args={[
+							new Float32Array([
+								-BED_X / 2, -BED_Y / 2, 0,
+								BED_X / 2, -BED_Y / 2, 0,
+								BED_X / 2, BED_Y / 2, 0,
+								-BED_X / 2, BED_Y / 2, 0,
+							]),
+							3,
+						]}
+					/>
+				</bufferGeometry>
+				<lineBasicMaterial color={colors.primary} linewidth={2} />
+			</lineLoop>
+		</group>
 	)
 }
 
@@ -57,9 +99,11 @@ interface ReplicadMeshProps {
 	faces: any
 	edges: any
 	wireframe?: boolean
+	color?: string
+	edgeColor?: string
 }
 
-export function ReplicadMesh({ faces, edges, wireframe = false }: ReplicadMeshProps) {
+export function ReplicadMesh({ faces, edges, wireframe = false, color, edgeColor }: ReplicadMeshProps) {
 	const bodyRef = useRef(new THREE.BufferGeometry())
 	const linesRef = useRef(new THREE.BufferGeometry())
 	const { invalidate } = useThree()
@@ -83,7 +127,7 @@ export function ReplicadMesh({ faces, edges, wireframe = false }: ReplicadMeshPr
 		<group>
 			<mesh geometry={bodyRef.current}>
 				<meshStandardMaterial
-					color='#5a8296'
+					color={color ?? '#5a8296'}
 					wireframe={wireframe}
 					polygonOffset
 					polygonOffsetFactor={2.0}
@@ -91,7 +135,7 @@ export function ReplicadMesh({ faces, edges, wireframe = false }: ReplicadMeshPr
 				/>
 			</mesh>
 			<lineSegments geometry={linesRef.current}>
-				<lineBasicMaterial color='#3c5a6e' />
+				<lineBasicMaterial color={edgeColor ?? '#3c5a6e'} />
 			</lineSegments>
 		</group>
 	)
@@ -100,9 +144,10 @@ export function ReplicadMesh({ faces, edges, wireframe = false }: ReplicadMeshPr
 interface StlMeshProps {
 	geometry: THREE.BufferGeometry
 	wireframe?: boolean
+	color?: string
 }
 
-export function StlMesh({ geometry, wireframe = false }: StlMeshProps) {
+export function StlMesh({ geometry, wireframe = false, color }: StlMeshProps) {
 	const { invalidate } = useThree()
 
 	useEffect(() => {
@@ -113,7 +158,7 @@ export function StlMesh({ geometry, wireframe = false }: StlMeshProps) {
 	return (
 		<mesh geometry={geometry}>
 			<meshStandardMaterial
-				color='#5a8296'
+				color={color ?? '#5a8296'}
 				wireframe={wireframe}
 				polygonOffset
 				polygonOffsetFactor={2.0}

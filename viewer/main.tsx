@@ -1,5 +1,6 @@
 import './styles.css'
 
+import { ThemeProvider } from '@trenaryja/ui'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Gallery } from './gallery'
@@ -32,4 +33,8 @@ function App() {
 	return <Gallery />
 }
 
-createRoot(document.getElementById('root')!).render(<App />)
+createRoot(document.getElementById('root')!).render(
+	<ThemeProvider defaultTheme='dark'>
+		<App />
+	</ThemeProvider>,
+)
