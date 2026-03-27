@@ -1,4 +1,4 @@
-import { useTheme } from '@trenaryja/ui'
+import { ThemePicker } from '@trenaryja/ui'
 import { wrap } from 'comlink'
 import { useEffect, useRef, useState } from 'react'
 import type { BufferGeometry } from 'three'
@@ -102,7 +102,6 @@ export function Viewer({ slug }: ViewerProps) {
 	const project = projects.find((p) => p.slug === slug)
 	const colors = useThemeColors()
 
-	const [showGrid, setShowGrid] = usePersistedState('showGrid', true)
 	const [showBuildPlate, setShowBuildPlate] = usePersistedState('showBuildPlate', true)
 	const [wireframe, setWireframe] = usePersistedState('wireframe', false)
 
@@ -124,30 +123,16 @@ export function Viewer({ slug }: ViewerProps) {
 			<ParamRail>
 				<ViewerToolbar
 					project={project}
-					showGrid={showGrid}
 					showBuildPlate={showBuildPlate}
 					wireframe={wireframe}
-					onToggleGrid={() => setShowGrid((g) => !g)}
 					onToggleBuildPlate={() => setShowBuildPlate((b) => !b)}
 					onToggleWireframe={() => setWireframe((w) => !w)}
 				/>
 				<div className='flex-1'>
 					{project.type === 'replicad' ? (
-						<ReplicadViewer
-							project={project}
-							showGrid={showGrid}
-							showBuildPlate={showBuildPlate}
-							wireframe={wireframe}
-							colors={colors}
-						/>
+						<ReplicadViewer project={project} showBuildPlate={showBuildPlate} wireframe={wireframe} colors={colors} />
 					) : (
-						<OpenScadViewer
-							project={project}
-							showGrid={showGrid}
-							showBuildPlate={showBuildPlate}
-							wireframe={wireframe}
-							colors={colors}
-						/>
+						<OpenScadViewer project={project} showBuildPlate={showBuildPlate} wireframe={wireframe} colors={colors} />
 					)}
 				</div>
 			</ParamRail>
@@ -164,38 +149,16 @@ function downloadBlob(blob: Blob, filename: string) {
 	URL.revokeObjectURL(url)
 }
 
-function ThemeSwitcher() {
-	const { theme, setTheme, themes } = useTheme()
-
-	return (
-		<select
-			className='select select-xs select-ghost w-28'
-			value={theme}
-			onChange={(e) => setTheme(e.target.value)}
-		>
-			{themes.map((t) => (
-				<option key={t} value={t}>
-					{t}
-				</option>
-			))}
-		</select>
-	)
-}
-
 function ViewerToolbar({
 	project,
-	showGrid,
 	showBuildPlate,
 	wireframe,
-	onToggleGrid,
 	onToggleBuildPlate,
 	onToggleWireframe,
 }: {
 	project: Project
-	showGrid: boolean
 	showBuildPlate: boolean
 	wireframe: boolean
-	onToggleGrid: () => void
 	onToggleBuildPlate: () => void
 	onToggleWireframe: () => void
 }) {
@@ -218,15 +181,7 @@ function ViewerToolbar({
 
 	return (
 		<div className='flex items-center gap-3 bg-base-200 px-4 py-2'>
-			<a href='#/' className='btn btn-ghost btn-sm'>
-				&larr; Gallery
-			</a>
 			<h1 className='text-lg font-semibold flex-1'>{project.slug}</h1>
-			<span className='badge badge-sm badge-outline'>{project.type === 'replicad' ? '.ts' : '.scad'}</span>
-			<label className='flex items-center gap-1.5 text-sm cursor-pointer'>
-				<input type='checkbox' className='toggle toggle-xs' checked={showGrid} onChange={onToggleGrid} />
-				Grid
-			</label>
 			<label className='flex items-center gap-1.5 text-sm cursor-pointer'>
 				<input type='checkbox' className='toggle toggle-xs' checked={showBuildPlate} onChange={onToggleBuildPlate} />
 				Bed
@@ -255,20 +210,19 @@ function ViewerToolbar({
 					</button>
 				</div>
 			)}
-			<ThemeSwitcher />
+			<ThemePicker variant='popover' />
 		</div>
 	)
 }
 
 interface SceneViewerProps {
 	project: Project
-	showGrid: boolean
 	showBuildPlate: boolean
 	wireframe: boolean
 	colors: import('./hooks/use-theme-colors').ThemeColors
 }
 
-function ReplicadViewer({ project, showGrid, showBuildPlate, wireframe, colors }: SceneViewerProps) {
+function ReplicadViewer({ project, showBuildPlate, wireframe, colors }: SceneViewerProps) {
 	const { mesh, error, loading } = useReplicadModel(project.modelUrl)
 
 	if (loading) {
@@ -291,13 +245,13 @@ function ReplicadViewer({ project, showGrid, showBuildPlate, wireframe, colors }
 	if (!mesh) return null
 
 	return (
-		<ThreeScene showGrid={showGrid} showBuildPlate={showBuildPlate} colors={colors}>
+		<ThreeScene showBuildPlate={showBuildPlate} colors={colors}>
 			<ReplicadMesh faces={mesh.faces} edges={mesh.edges} wireframe={wireframe} color={colors.baseContent} edgeColor={colors.base300} />
 		</ThreeScene>
 	)
 }
 
-function OpenScadViewer({ project, showGrid, showBuildPlate, wireframe, colors }: SceneViewerProps) {
+function OpenScadViewer({ project, showBuildPlate, wireframe, colors }: SceneViewerProps) {
 	const { geometry, error, loading } = useStlModel(project.stlUrl)
 
 	if (!project.stlUrl) {
@@ -333,7 +287,7 @@ function OpenScadViewer({ project, showGrid, showBuildPlate, wireframe, colors }
 	if (!geometry) return null
 
 	return (
-		<ThreeScene showGrid={showGrid} showBuildPlate={showBuildPlate} colors={colors}>
+		<ThreeScene showBuildPlate={showBuildPlate} colors={colors}>
 			<StlMesh geometry={geometry} wireframe={wireframe} color={colors.baseContent} />
 		</ThreeScene>
 	)

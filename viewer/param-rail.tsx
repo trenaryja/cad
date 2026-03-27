@@ -1,4 +1,4 @@
-import { LuPanelLeftClose, LuPanelLeftOpen, LuSettings } from 'react-icons/lu'
+import { LuGalleryHorizontalEnd, LuPanelLeftClose, LuPanelLeftOpen, LuSettings } from 'react-icons/lu'
 
 export function ParamRail({ children }: { children: React.ReactNode }) {
 	return (
@@ -7,9 +7,10 @@ export function ParamRail({ children }: { children: React.ReactNode }) {
 			<aside className='flex flex-col bg-base-200 h-full border-r border-base-300 transition-all duration-300'>
 				<nav className='flex flex-col gap-1 p-2'>
 					<RailToggle />
+					<RailLink href='#/' icon={LuGalleryHorizontalEnd} label='Gallery' />
 					<RailNavItem icon={LuSettings} label='Parameters' />
 				</nav>
-				<div className='overflow-y-auto p-2 is-rail-close:hidden'>
+				<div className='flex-1 overflow-y-auto p-2 is-rail-close:hidden'>
 					<p className='text-xs opacity-50 px-2'>Parameter controls coming soon.</p>
 				</div>
 			</aside>
@@ -31,6 +32,21 @@ function RailToggle() {
 				<LuPanelLeftOpen className='swap-off shrink-0' />
 			</div>
 		</label>
+	)
+}
+
+function RailLink({
+	href,
+	icon: Icon,
+	label,
+}: { href: string; icon: React.ComponentType<{ className?: string }>; label: string }) {
+	return (
+		<a href={href} className='btn btn-block btn-ghost transition-all justify-start is-rail-close:gap-0'>
+			<Icon className='shrink-0' />
+			<span className='overflow-hidden whitespace-nowrap transition-all is-rail-close:w-0 is-rail-close:opacity-0'>
+				{label}
+			</span>
+		</a>
 	)
 }
 

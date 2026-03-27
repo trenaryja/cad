@@ -1,4 +1,4 @@
-import { Bounds, Environment, Grid, OrbitControls } from '@react-three/drei'
+import { Bounds, Environment, OrbitControls } from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useRef } from 'react'
 import { syncFaces, syncLines } from 'replicad-threejs-helper'
@@ -13,12 +13,11 @@ const BED_Y = 256
 
 interface ThreeSceneProps {
 	children: React.ReactNode
-	showGrid?: boolean
 	showBuildPlate?: boolean
 	colors: ThemeColors
 }
 
-export function ThreeScene({ children, showGrid = true, showBuildPlate = true, colors }: ThreeSceneProps) {
+export function ThreeScene({ children, showBuildPlate = true, colors }: ThreeSceneProps) {
 	return (
 		<Canvas
 			dpr={Math.min(window.devicePixelRatio, 2)}
@@ -35,20 +34,6 @@ export function ThreeScene({ children, showGrid = true, showBuildPlate = true, c
 				<Bounds fit clip margin={1.5}>
 					{children}
 				</Bounds>
-
-				{showGrid && (
-					<Grid
-						args={[BED_X, BED_Y]}
-						cellSize={10}
-						cellThickness={0.5}
-						cellColor={colors.base300}
-						sectionSize={50}
-						sectionThickness={1}
-						sectionColor={colors.base200}
-						fadeDistance={400}
-						fadeStrength={1}
-					/>
-				)}
 
 				{showBuildPlate && <BuildPlate colors={colors} />}
 
