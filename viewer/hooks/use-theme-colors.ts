@@ -46,7 +46,7 @@ function cssColorToHex(cssColor: string): string {
 }
 
 /** Read a CSS variable's resolved color as hex */
-function cssVarToHex(cssVar: string): string {
+export function cssVarToHex(cssVar: string): string {
 	const value = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim()
 	if (!value) return '#888888'
 	return cssColorToHex(value)

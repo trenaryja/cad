@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { LuBox, LuGalleryHorizontalEnd, LuPanelLeftClose, LuPanelLeftOpen, LuRotateCcw, LuSettings, LuSun } from 'react-icons/lu'
+import type { ParamState } from './hooks/use-params'
 import type { SceneSettings } from './hooks/use-scene-settings'
 import { ENV_PRESETS, MATERIAL_PRESETS, type MaterialPreset } from './hooks/use-scene-settings'
-import type { ParamState } from './hooks/use-params'
+import { cssVarToHex } from './hooks/use-theme-colors'
 import type { Param } from './param-parser'
 import type { BodyState } from './viewer'
 
@@ -46,17 +48,51 @@ export function ParamRail({ params, bodyState, sceneSettings, children }: { para
 
 // --- Color swatches for multi-body ---
 
-/** DaisyUI-inspired swatch palette + neutral tones */
-const COLOR_SWATCHES = [
-	'#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a7896', '#8a965a', '#965a8a',
-	'#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#34495e',
-	'#ecf0f1', '#bdc3c7', '#95a5a6', '#7f8c8d', '#2c3e50', '#1a1a2e', '#ffffff', '#000000',
+/** DaisyUI semantic CSS variables used as swatch colors */
+const SWATCH_VARS = [
+	{ var: '--color-base-content', label: 'Content' },
+	{ var: '--color-primary', label: 'Primary' },
+	{ var: '--color-secondary', label: 'Secondary' },
+	{ var: '--color-accent', label: 'Accent' },
+	{ var: '--color-info', label: 'Info' },
+	{ var: '--color-success', label: 'Success' },
+	{ var: '--color-warning', label: 'Warning' },
+	{ var: '--color-error', label: 'Error' },
+	{ var: '--color-base-100', label: 'Base 100' },
+	{ var: '--color-base-200', label: 'Base 200' },
+	{ var: '--color-base-300', label: 'Base 300' },
 ]
+
+/** Read all semantic swatch colors from the current DaisyUI theme */
+function readSwatchColors(): { hex: string; label: string }[] {
+	return SWATCH_VARS.map((s) => ({ hex: cssVarToHex(s.var), label: s.label }))
+}
+
+/** Hook that returns theme-aware swatch hex values, updating on theme change */
+function useSwatchColors() {
+	const [swatches, setSwatches] = useState<{ hex: string; label: string }[]>([])
+
+	useEffect(() => {
+		setSwatches(readSwatchColors())
+		const observer = new MutationObserver(() => {
+			requestAnimationFrame(() => setSwatches(readSwatchColors()))
+		})
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-theme', 'class', 'style'],
+		})
+		return () => observer.disconnect()
+	}, [])
+
+	return swatches
+}
 
 // Palette for multi-body — matches BODY_COLORS in viewer.tsx
 const BODY_COLORS = ['#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a7896', '#8a965a', '#965a8a']
 
 function BodyControls({ bodyState }: { bodyState: BodyState }) {
+	const swatches = useSwatchColors()
+
 	return (
 		<div className='flex flex-col gap-1'>
 			<span className='text-xs font-semibold opacity-60 uppercase tracking-wide px-2 mb-1'>Bodies</span>
@@ -64,7 +100,7 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 				const visible = bodyState.visible[name] !== false
 				const color = bodyState.colors[name] || BODY_COLORS[i % BODY_COLORS.length]
 				return (
-					<div key={name} className='flex flex-col gap-1 px-2'>
+					<div key={name} className='flex flex-col gap-1.5 px-2 mb-1'>
 						<div className='flex items-center gap-2'>
 							<input
 								type='checkbox'
@@ -81,13 +117,14 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 							/>
 						</div>
 						<div className='flex flex-wrap gap-0.5 ml-7'>
-							{COLOR_SWATCHES.slice(0, 16).map((swatch) => (
+							{swatches.map((swatch) => (
 								<button
-									key={swatch}
+									key={swatch.label}
 									type='button'
+									title={swatch.label}
 									className='w-4 h-4 rounded-sm border border-base-300 cursor-pointer hover:scale-125 transition-transform'
-									style={{ backgroundColor: swatch, outline: swatch === color ? '2px solid var(--color-primary)' : undefined, outlineOffset: '1px' }}
-									onClick={() => bodyState.setColor(name, swatch)}
+									style={{ backgroundColor: swatch.hex, outline: swatch.hex === color ? '2px solid var(--color-primary)' : undefined, outlineOffset: '1px' }}
+									onClick={() => bodyState.setColor(name, swatch.hex)}
 								/>
 							))}
 						</div>
