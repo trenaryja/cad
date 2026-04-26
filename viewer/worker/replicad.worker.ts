@@ -1,13 +1,17 @@
 import { expose } from 'comlink'
+import type { Shape3D } from 'replicad'
 import { makeCompound, setOC } from 'replicad'
+import type { OpenCascadeInstance } from 'replicad-opencascadejs'
 import opencascade from 'replicad-opencascadejs/src/replicad_single.js'
 import opencascadeWasm from 'replicad-opencascadejs/src/replicad_single.wasm?url'
+import type { ReplicadMeshedEdges, ReplicadMeshedFaces } from 'replicad-threejs-helper'
 
 let loaded = false
 
 const init = async () => {
 	if (loaded) return
-	const OC = await (opencascade as any)({
+	// init() accepts { locateFile } at runtime but .d.ts omits it (https://github.com/sgenoud/replicad/issues/54)
+	const OC = await (opencascade as unknown as (config: { locateFile: () => string }) => Promise<OpenCascadeInstance>)({
 		locateFile: () => opencascadeWasm,
 	})
 	setOC(OC)
@@ -18,27 +22,36 @@ const started = init()
 
 interface BodyMesh {
 	name: string
-	faces: any
-	edges: any
+	faces: ReplicadMeshedFaces
+	edges: ReplicadMeshedEdges
 }
 
 interface NamedShape {
 	name: string
-	shape: any
+	shape: Shape3D
 }
 
 function isNamedShapeArray(result: unknown): result is NamedShape[] {
-	return Array.isArray(result) && result.length > 0 && typeof result[0] === 'object' && result[0] !== null && 'name' in result[0] && 'shape' in result[0]
+	return (
+		Array.isArray(result) &&
+		result.length > 0 &&
+		typeof result[0] === 'object' &&
+		result[0] !== null &&
+		'name' in result[0] &&
+		'shape' in result[0]
+	)
 }
 
-function meshShape(shape: any) {
+function meshShape(shape: Shape3D) {
 	return {
 		faces: shape.mesh({ tolerance: 0.05, angularTolerance: 30 }),
-		edges: shape.meshEdges({ keepMesh: true }),
+		edges: shape.meshEdges(),
 	}
 }
 
-function callMain(mainFn: Function, overrides?: Record<string, number | string | boolean>) {
+type MainFn = (overrides?: Record<string, number | string | boolean>) => Shape3D | NamedShape[]
+
+function callMain(mainFn: MainFn, overrides?: Record<string, number | string | boolean>) {
 	return overrides && Object.keys(overrides).length > 0 ? mainFn(overrides) : mainFn()
 }
 
@@ -75,9 +88,9 @@ async function exportSTL(modelPath: string): Promise<Blob> {
 
 	if (isNamedShapeArray(result)) {
 		const compound = makeCompound(result.map((b) => b.shape))
-		return compound.blobSTL() as Blob
+		return compound.blobSTL()
 	}
-	return result.blobSTL() as Blob
+	return result.blobSTL()
 }
 
 async function exportSTEP(modelPath: string): Promise<Blob> {
@@ -91,9 +104,9 @@ async function exportSTEP(modelPath: string): Promise<Blob> {
 
 	if (isNamedShapeArray(result)) {
 		const compound = makeCompound(result.map((b) => b.shape))
-		return compound.blobSTEP() as Blob
+		return compound.blobSTEP()
 	}
-	return result.blobSTEP() as Blob
+	return result.blobSTEP()
 }
 
 expose({ buildModelFromImport, exportSTL, exportSTEP })

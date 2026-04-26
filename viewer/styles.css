@@ -26,8 +26,8 @@
 }
 
 @custom-variant is-rail-open {
-	.rail:has(> .rail-toggle:checked) &,
-	.rail.rail-open & {
+	.rail.rail-open &,
+	.rail:has(> .rail-toggle:checked) & {
 		@slot;
 	}
 }

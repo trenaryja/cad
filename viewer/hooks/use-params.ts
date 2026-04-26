@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Project } from '../discovery'
-import { parseParams, type Param } from '../param-parser'
+import { type Param, parseParams } from '../param-parser'
 
 export interface ParamState {
 	/** Parsed parameter definitions from source */
@@ -32,7 +32,7 @@ export function useParams(project: Project): ParamState {
 	// Reset overrides when project changes
 	useEffect(() => {
 		setOverrides({})
-	}, [project.slug])
+	}, [])
 
 	const setOverride = (name: string, value: number | string | boolean) => {
 		setOverrides((prev) => ({ ...prev, [name]: value }))

@@ -1,22 +1,22 @@
-const modelModules = import.meta.glob('../src/*/src/model.ts', {
+const modelModules = import.meta.glob<string>('../src/*/src/model.ts', {
 	query: '?url',
 	import: 'default',
 	eager: true,
 })
 
-const thumbnailModules = import.meta.glob('../src/*/render.png', {
+const thumbnailModules = import.meta.glob<string>('../src/*/render.png', {
 	query: '?url',
 	import: 'default',
 	eager: true,
 })
 
-const stlModules = import.meta.glob('../src/*/*.stl', {
+const stlModules = import.meta.glob<string>('../src/*/*.stl', {
 	query: '?url',
 	import: 'default',
 	eager: true,
 })
 
-const scadModules = import.meta.glob('../src/*/src/*.scad', {
+const scadModules = import.meta.glob<string>('../src/*/src/*.scad', {
 	query: '?url',
 	import: 'default',
 	eager: true,
@@ -42,8 +42,8 @@ export function discoverProjects(): Project[] {
 		projects.set(slug, {
 			slug,
 			type: 'replicad',
-			modelUrl: url as string,
-			sourceUrl: url as string,
+			modelUrl: url,
+			sourceUrl: url,
 		})
 	}
 
@@ -53,7 +53,7 @@ export function discoverProjects(): Project[] {
 		if (!match) continue
 		const slug = match[1]
 		if (!projects.has(slug)) {
-			projects.set(slug, { slug, type: 'openscad', sourceUrl: url as string })
+			projects.set(slug, { slug, type: 'openscad', sourceUrl: url })
 		}
 	}
 
@@ -63,7 +63,7 @@ export function discoverProjects(): Project[] {
 		if (!match) continue
 		const slug = match[1]
 		const project = projects.get(slug)
-		if (project) project.thumbnail = url as string
+		if (project) project.thumbnail = url
 	}
 
 	// Attach STL files
@@ -72,7 +72,7 @@ export function discoverProjects(): Project[] {
 		if (!match) continue
 		const slug = match[1]
 		const project = projects.get(slug)
-		if (project) project.stlUrl = url as string
+		if (project) project.stlUrl = url
 	}
 
 	return Array.from(projects.values()).sort((a, b) => a.slug.localeCompare(b.slug))

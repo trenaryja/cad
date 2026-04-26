@@ -1,13 +1,16 @@
 /** Parse parameters from .scad and .ts model source files */
 
-export interface Param {
+interface ParamBase {
 	name: string
-	value: number | string | boolean
-	type: 'number' | 'string' | 'boolean'
 	unit?: string
 	description?: string
 	group: string
 }
+
+export type Param =
+	| (ParamBase & { type: 'number'; value: number })
+	| (ParamBase & { type: 'string'; value: string })
+	| (ParamBase & { type: 'boolean'; value: boolean })
 
 /**
  * Parse parameters from a .scad source file.
@@ -88,7 +91,12 @@ function parseTsParams(source: string): Param[] {
 	return params
 }
 
-function parseValue(raw: string): { value: number | string | boolean; type: 'number' | 'string' | 'boolean' } | null {
+type ParsedValue =
+	| { value: number; type: 'number' }
+	| { value: string; type: 'string' }
+	| { value: boolean; type: 'boolean' }
+
+function parseValue(raw: string): ParsedValue | null {
 	const trimmed = raw.trim().replace(/;$/, '')
 
 	// Boolean
@@ -98,7 +106,7 @@ function parseValue(raw: string): { value: number | string | boolean; type: 'num
 
 	// Number (int or float)
 	const num = Number(trimmed)
-	if (!isNaN(num) && trimmed !== '') {
+	if (!Number.isNaN(num) && trimmed !== '') {
 		return { value: num, type: 'number' }
 	}
 

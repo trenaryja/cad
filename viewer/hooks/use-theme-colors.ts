@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 
 /** CSS variable names to read from the DaisyUI theme */
-const CSS_VARS = ['--color-base-100', '--color-base-200', '--color-base-300', '--color-base-content', '--color-primary'] as const
+const CSS_VARS = [
+	'--color-base-100',
+	'--color-base-200',
+	'--color-base-300',
+	'--color-base-content',
+	'--color-primary',
+] as const
 
 type ThemeColorKey = 'base100' | 'base200' | 'base300' | 'baseContent' | 'primary'
 
@@ -70,7 +76,7 @@ function readAllColors(): ThemeColors {
  * for use in Three.js materials. Re-reads on theme change.
  */
 export function useThemeColors(): ThemeColors {
-	const [colors, setColors] = useState<ThemeColors>(DEFAULT_COLORS)
+	const [colors, setColors] = useState(DEFAULT_COLORS)
 
 	useEffect(() => {
 		// Initial read

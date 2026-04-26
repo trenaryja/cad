@@ -1,52 +1,154 @@
 import { useEffect, useState } from 'react'
-import { LuBox, LuGalleryHorizontalEnd, LuPanelLeftClose, LuPanelLeftOpen, LuRotateCcw, LuSettings, LuSun } from 'react-icons/lu'
+import { LuBox, LuGalleryHorizontalEnd, LuRotateCcw, LuSettings, LuSun, LuX } from 'react-icons/lu'
 import type { ParamState } from './hooks/use-params'
 import type { SceneSettings } from './hooks/use-scene-settings'
-import { ENV_PRESETS, MATERIAL_PRESETS, type MaterialPreset } from './hooks/use-scene-settings'
+import { ENV_PRESETS, MATERIAL_PRESET_KEYS, MATERIAL_PRESETS } from './hooks/use-scene-settings'
 import { cssVarToHex, resolveColor } from './hooks/use-theme-colors'
 import type { Param } from './param-parser'
 import type { BodyState } from './viewer'
 
-export function ParamRail({ params, bodyState, sceneSettings, children }: { params?: ParamState; bodyState?: BodyState; sceneSettings?: SceneSettings; children: React.ReactNode }) {
+type PanelId = 'bodies' | 'params' | 'scene'
+
+export function ParamRail({
+	params,
+	bodyState,
+	sceneSettings,
+	children,
+}: {
+	params?: ParamState
+	bodyState?: BodyState
+	sceneSettings?: SceneSettings
+	children: React.ReactNode
+}) {
+	const [activePanel, setActivePanel] = useState<PanelId | null>(null)
 	const hasParams = params && params.params.length > 0
 	const hasOverrides = params && Object.keys(params.overrides).length > 0
 	const hasBodies = bodyState && bodyState.bodyNames.length > 0
 
+	const toggle = (panel: PanelId) => setActivePanel((prev) => (prev === panel ? null : panel))
+
+	// Close panel on Escape
+	useEffect(() => {
+		const handler = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') setActivePanel(null)
+		}
+		window.addEventListener('keydown', handler)
+		return () => window.removeEventListener('keydown', handler)
+	}, [])
+
+	const panelTitles: Record<PanelId, string> = { bodies: 'Bodies', params: 'Parameters', scene: 'Scene' }
+
 	return (
-		<div className='rail h-full'>
-			<input type='checkbox' className='rail-toggle' id='param-rail' />
-			<aside className='flex flex-col bg-base-200 h-full border-r border-base-300 transition-all duration-300'>
-				<nav className='flex flex-col gap-1 p-2'>
-					<RailToggle />
-					<RailLink href='#/' icon={LuGalleryHorizontalEnd} label='Gallery' />
-					{hasBodies && <RailNavItem icon={LuBox} label='Bodies' />}
-					<RailNavItem icon={LuSettings} label='Parameters' />
-					<RailNavItem icon={LuSun} label='Scene' />
-				</nav>
-				<div className='flex-1 overflow-y-auto p-2 is-rail-close:hidden'>
-					{hasBodies && <BodyControls bodyState={bodyState} />}
-					{hasBodies && hasParams && <div className='divider my-1' />}
-					{hasParams ? (
-						<ParamControls params={params} />
-					) : (
-						!hasBodies && <p className='text-xs opacity-50 px-2'>No parameters found.</p>
+		<div className='flex h-full'>
+			{/* Icon strip */}
+			<nav className='flex flex-col items-center gap-0.5 w-12 bg-base-200 border-r border-base-300 py-2 shrink-0 z-20'>
+				<NavLink href='#/' icon={LuGalleryHorizontalEnd} tooltip='Gallery' />
+				<div className='w-6 border-t border-base-300 my-1' />
+				{hasBodies && (
+					<NavButton icon={LuBox} tooltip='Bodies' active={activePanel === 'bodies'} onClick={() => toggle('bodies')} />
+				)}
+				{hasParams && (
+					<NavButton
+						icon={LuSettings}
+						tooltip='Parameters'
+						active={activePanel === 'params'}
+						onClick={() => toggle('params')}
+					/>
+				)}
+				<NavButton icon={LuSun} tooltip='Scene' active={activePanel === 'scene'} onClick={() => toggle('scene')} />
+			</nav>
+
+			{/* Content area with overlaying flyout */}
+			<div className='flex-1 relative min-w-0'>
+				{/* Flyout panel */}
+				<div
+					className={`absolute left-0 top-0 bottom-0 w-72 bg-base-200/95 backdrop-blur-sm border-r border-base-300 z-10 flex flex-col transition-all duration-200 ease-out ${
+						activePanel ? 'translate-x-0 opacity-100' : '-translate-x-2 opacity-0 pointer-events-none'
+					}`}
+				>
+					{activePanel && (
+						<>
+							<div className='flex items-center justify-between px-3 py-2 border-b border-base-300'>
+								<span className='text-xs font-semibold uppercase tracking-wider opacity-60'>
+									{panelTitles[activePanel]}
+								</span>
+								<button type='button' className='btn btn-ghost btn-xs btn-square' onClick={() => setActivePanel(null)}>
+									<LuX className='w-3.5 h-3.5' />
+								</button>
+							</div>
+							<div className='flex-1 overflow-y-auto p-3'>
+								{activePanel === 'bodies' && bodyState && <BodyControls bodyState={bodyState} />}
+								{activePanel === 'params' && params && (
+									<>
+										<ParamControls params={params} />
+										{hasOverrides && (
+											<button
+												type='button'
+												className='btn btn-ghost btn-xs btn-block mt-3 gap-1'
+												onClick={params.resetOverrides}
+											>
+												<LuRotateCcw className='w-3 h-3' />
+												Reset to defaults
+											</button>
+										)}
+									</>
+								)}
+								{activePanel === 'scene' && sceneSettings && <SceneControls settings={sceneSettings} />}
+							</div>
+						</>
 					)}
-					{hasOverrides && (
-						<button type='button' className='btn btn-ghost btn-xs btn-block mt-3 gap-1' onClick={params.resetOverrides}>
-							<LuRotateCcw className='w-3 h-3' />
-							Reset to defaults
-						</button>
-					)}
-					{(hasParams || hasBodies) && <div className='divider my-1' />}
-					{sceneSettings && <SceneControls settings={sceneSettings} />}
 				</div>
-			</aside>
-			<main className='flex-1 flex flex-col min-w-0'>{children}</main>
+
+				{/* Main content */}
+				<div className='h-full flex flex-col'>{children}</div>
+			</div>
 		</div>
 	)
 }
 
-// --- Color swatches for multi-body ---
+// --- Nav strip components ---
+
+function NavLink({
+	href,
+	icon: Icon,
+	tooltip,
+}: {
+	href: string
+	icon: React.ComponentType<{ className?: string }>
+	tooltip: string
+}) {
+	return (
+		<a href={href} className='btn btn-ghost btn-square btn-sm' title={tooltip}>
+			<Icon className='w-4 h-4' />
+		</a>
+	)
+}
+
+function NavButton({
+	icon: Icon,
+	tooltip,
+	active,
+	onClick,
+}: {
+	icon: React.ComponentType<{ className?: string }>
+	tooltip: string
+	active: boolean
+	onClick: () => void
+}) {
+	return (
+		<button
+			type='button'
+			onClick={onClick}
+			className={`btn btn-ghost btn-square btn-sm relative ${active ? 'bg-base-300' : ''}`}
+			title={tooltip}
+		>
+			<Icon className='w-4 h-4' />
+			{active && <div className='absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary' />}
+		</button>
+	)
+}
+
+// --- Body controls ---
 
 /** DaisyUI semantic CSS variables used as swatch colors */
 const SWATCH_VARS = [
@@ -63,14 +165,16 @@ const SWATCH_VARS = [
 	{ var: '--color-base-300', label: 'Base 300' },
 ]
 
-interface Swatch { hex: string; label: string; cssVar: string }
+interface Swatch {
+	hex: string
+	label: string
+	cssVar: string
+}
 
-/** Read all semantic swatch colors from the current DaisyUI theme */
 function readSwatchColors(): Swatch[] {
 	return SWATCH_VARS.map((s) => ({ hex: cssVarToHex(s.var), label: s.label, cssVar: s.var }))
 }
 
-/** Hook that returns theme-aware swatch hex values, updating on theme change */
 function useSwatchColors() {
 	const [swatches, setSwatches] = useState<Swatch[]>([])
 
@@ -94,17 +198,20 @@ const BODY_COLORS = ['#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a
 
 function BodyControls({ bodyState }: { bodyState: BodyState }) {
 	const swatches = useSwatchColors()
+	const [expandedBody, setExpandedBody] = useState<string | null>(null)
 
 	return (
-		<div className='flex flex-col gap-1'>
-			<span className='text-xs font-semibold opacity-60 uppercase tracking-wide px-2 mb-1'>Bodies</span>
+		<div className='flex flex-col gap-1.5'>
 			{bodyState.bodyNames.map((name, i) => {
 				const visible = bodyState.visible[name] !== false
 				const rawColor = bodyState.colors[name] || BODY_COLORS[i % BODY_COLORS.length]
 				const resolvedColor = resolveColor(rawColor)
+				const isExpanded = expandedBody === name
+
 				return (
-					<div key={name} className='flex flex-col gap-1.5 px-2 mb-1'>
-						<div className='flex items-center gap-2'>
+					<div key={name} className='rounded-lg bg-base-300/40 overflow-hidden'>
+						{/* Compact row */}
+						<div className='flex items-center gap-2 px-2.5 py-1.5'>
 							<input
 								type='checkbox'
 								className='toggle toggle-xs'
@@ -112,25 +219,44 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 								onChange={() => bodyState.setVisible(name, !visible)}
 							/>
 							<span className='text-sm truncate flex-1'>{name}</span>
-							<input
-								type='color'
-								className='w-5 h-5 cursor-pointer rounded border-0 p-0'
-								value={resolvedColor}
-								onChange={(e) => bodyState.setColor(name, e.target.value)}
+							<button
+								type='button'
+								className='w-5 h-5 rounded-full border-2 border-neutral/30 cursor-pointer shrink-0 transition-transform hover:scale-110'
+								style={{ backgroundColor: resolvedColor }}
+								onClick={() => setExpandedBody(isExpanded ? null : name)}
+								title='Change color'
 							/>
 						</div>
-						<div className='flex flex-wrap gap-0.5 ml-7'>
-							{swatches.map((swatch) => (
-								<button
-									key={swatch.label}
-									type='button'
-									title={swatch.label}
-									className='w-4 h-4 rounded-sm border border-base-300 cursor-pointer hover:scale-125 transition-transform'
-									style={{ backgroundColor: swatch.hex, outline: rawColor === swatch.cssVar ? '2px solid var(--color-primary)' : undefined, outlineOffset: '1px' }}
-									onClick={() => bodyState.setColor(name, swatch.cssVar)}
+
+						{/* Expanded color picker */}
+						{isExpanded && (
+							<div className='px-2.5 pb-2 pt-1.5 border-t border-base-300/50'>
+								<div className='flex flex-wrap gap-1 mb-2'>
+									{swatches.map((swatch) => (
+										<button
+											key={swatch.label}
+											type='button'
+											title={swatch.label}
+											className='w-5 h-5 rounded-full border border-neutral/20 cursor-pointer transition-transform hover:scale-125'
+											style={{
+												backgroundColor: swatch.hex,
+												outline: rawColor === swatch.cssVar ? '2px solid var(--color-primary)' : undefined,
+												outlineOffset: '1px',
+											}}
+											onClick={() => {
+												bodyState.setColor(name, swatch.cssVar)
+											}}
+										/>
+									))}
+								</div>
+								<input
+									type='color'
+									className='w-full h-7 cursor-pointer rounded border border-neutral/20 p-0'
+									value={resolvedColor}
+									onChange={(e) => bodyState.setColor(name, e.target.value)}
 								/>
-							))}
-						</div>
+							</div>
+						)}
 					</div>
 				)
 			})}
@@ -142,61 +268,117 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 
 function SceneControls({ settings }: { settings: SceneSettings }) {
 	return (
-		<div className='flex flex-col gap-3'>
-			<span className='text-xs font-semibold opacity-60 uppercase tracking-wide px-2'>Scene</span>
-
-			{/* Material preset */}
-			<label className='flex flex-col gap-0.5 px-2'>
-				<span className='text-xs opacity-70'>Material</span>
-				<select
-					className='select select-xs select-bordered w-full'
-					value={settings.material}
-					onChange={(e) => settings.setMaterial(e.target.value as MaterialPreset)}
-				>
-					{(Object.keys(MATERIAL_PRESETS) as MaterialPreset[]).map((key) => (
-						<option key={key} value={key}>{MATERIAL_PRESETS[key].label}</option>
+		<div className='flex flex-col gap-4'>
+			{/* Material chips */}
+			<section>
+				<span className='text-xs font-semibold opacity-50 uppercase tracking-wider'>Material</span>
+				<div className='grid grid-cols-3 gap-1 mt-1.5'>
+					{MATERIAL_PRESET_KEYS.map((key) => (
+						<button
+							key={key}
+							type='button'
+							className={`btn btn-xs justify-start ${settings.material === key ? 'btn-primary' : 'btn-ghost'}`}
+							onClick={() => settings.setMaterial(key)}
+						>
+							{MATERIAL_PRESETS[key].label}
+						</button>
 					))}
-				</select>
-			</label>
-
-			{/* Environment preset */}
-			<label className='flex flex-col gap-0.5 px-2'>
-				<span className='text-xs opacity-70'>Environment</span>
-				<select
-					className='select select-xs select-bordered w-full'
-					value={settings.envPreset}
-					onChange={(e) => settings.setEnvPreset(e.target.value as typeof settings.envPreset)}
-				>
-					{ENV_PRESETS.map((p) => (
-						<option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
-					))}
-				</select>
-			</label>
-
-			{/* Light intensity */}
-			<label className='flex flex-col gap-0.5 px-2'>
-				<div className='flex items-center justify-between'>
-					<span className='text-xs opacity-70'>Light intensity</span>
-					<span className='text-xs font-mono opacity-50'>{settings.lightIntensity.toFixed(1)}</span>
 				</div>
-				<input
-					type='range'
-					className='range range-xs'
-					min={0}
-					max={3}
-					step={0.1}
-					value={settings.lightIntensity}
-					onChange={(e) => settings.setLightIntensity(parseFloat(e.target.value))}
-				/>
-			</label>
+			</section>
+
+			{/* Lighting */}
+			<section>
+				<span className='text-xs font-semibold opacity-50 uppercase tracking-wider'>Lighting</span>
+				<div className='flex flex-col gap-2 mt-1.5'>
+					<label className='flex flex-col gap-0.5'>
+						<div className='flex items-center justify-between'>
+							<span className='text-xs opacity-70'>Direct</span>
+							<span className='text-xs font-mono opacity-50'>{settings.lightIntensity.toFixed(1)}</span>
+						</div>
+						<input
+							type='range'
+							className='range range-xs'
+							min={0}
+							max={5}
+							step={0.1}
+							value={settings.lightIntensity}
+							onChange={(e) => settings.setLightIntensity(parseFloat(e.target.value))}
+						/>
+					</label>
+					<label className='flex flex-col gap-0.5'>
+						<div className='flex items-center justify-between'>
+							<span className='text-xs opacity-70'>Ambient</span>
+							<span className='text-xs font-mono opacity-50'>{settings.ambientIntensity.toFixed(1)}</span>
+						</div>
+						<input
+							type='range'
+							className='range range-xs'
+							min={0}
+							max={2}
+							step={0.1}
+							value={settings.ambientIntensity}
+							onChange={(e) => settings.setAmbientIntensity(parseFloat(e.target.value))}
+						/>
+					</label>
+				</div>
+			</section>
+
+			{/* Environment */}
+			<section>
+				<span className='text-xs font-semibold opacity-50 uppercase tracking-wider'>Environment</span>
+				<div className='flex gap-1 mt-1.5'>
+					{ENV_PRESETS.map((p) => (
+						<button
+							key={p}
+							type='button'
+							className={`btn btn-xs flex-1 ${settings.envPreset === p ? 'btn-primary' : 'btn-ghost'}`}
+							onClick={() => settings.setEnvPreset(p)}
+						>
+							{p.charAt(0).toUpperCase() + p.slice(1)}
+						</button>
+					))}
+				</div>
+			</section>
+
+			{/* Display toggles */}
+			<section>
+				<span className='text-xs font-semibold opacity-50 uppercase tracking-wider'>Display</span>
+				<div className='flex flex-col gap-1.5 mt-1.5'>
+					<SceneToggle label='Build plate' checked={settings.showBuildPlate} onChange={settings.setShowBuildPlate} />
+					<SceneToggle label='Wireframe' checked={settings.wireframe} onChange={settings.setWireframe} />
+					<SceneToggle label='Edges' checked={settings.showEdges} onChange={settings.setShowEdges} />
+					<SceneToggle label='Auto-rotate' checked={settings.autoRotate} onChange={settings.setAutoRotate} />
+				</div>
+			</section>
 		</div>
+	)
+}
+
+function SceneToggle({
+	label,
+	checked,
+	onChange,
+}: {
+	label: string
+	checked: boolean
+	onChange: (v: boolean) => void
+}) {
+	return (
+		<label className='flex items-center gap-2 cursor-pointer'>
+			<input
+				type='checkbox'
+				className='toggle toggle-xs'
+				checked={checked}
+				onChange={(e) => onChange(e.target.checked)}
+			/>
+			<span className='text-sm'>{label}</span>
+		</label>
 	)
 }
 
 // --- Parameter controls ---
 
 function ParamControls({ params }: { params: ParamState }) {
-	// Group params by their group name
 	const groups = new Map<string, Param[]>()
 	for (const p of params.params) {
 		const list = groups.get(p.group) || []
@@ -208,10 +390,15 @@ function ParamControls({ params }: { params: ParamState }) {
 		<div className='flex flex-col gap-3'>
 			{[...groups.entries()].map(([group, items]) => (
 				<fieldset key={group}>
-					<legend className='text-xs font-semibold opacity-60 uppercase tracking-wide px-2 mb-1'>{group}</legend>
+					<legend className='text-xs font-semibold opacity-50 uppercase tracking-wider mb-1'>{group}</legend>
 					<div className='flex flex-col gap-2'>
 						{items.map((p) => (
-							<ParamControl key={p.name} param={p} value={params.overrides[p.name]} onChange={(v) => params.setOverride(p.name, v)} />
+							<ParamControl
+								key={p.name}
+								param={p}
+								value={params.overrides[p.name]}
+								onChange={(v) => params.setOverride(p.name, v)}
+							/>
 						))}
 					</div>
 				</fieldset>
@@ -229,35 +416,40 @@ function ParamControl({
 	value: number | string | boolean | undefined
 	onChange: (v: number | string | boolean) => void
 }) {
-	const currentValue = value ?? param.value
-
 	if (param.type === 'boolean') {
+		const checked = typeof value === 'boolean' ? value : param.value
 		return (
-			<label className='flex items-center gap-2 px-2 cursor-pointer'>
-				<input type='checkbox' className='toggle toggle-xs' checked={currentValue as boolean} onChange={(e) => onChange(e.target.checked)} />
+			<label className='flex items-center gap-2 cursor-pointer'>
+				<input
+					type='checkbox'
+					className='toggle toggle-xs'
+					checked={checked}
+					onChange={(e) => onChange(e.target.checked)}
+				/>
 				<span className='text-sm'>{param.name}</span>
 			</label>
 		)
 	}
 
 	if (param.type === 'number') {
+		const current = typeof value === 'number' ? value : param.value
 		return (
-			<label className='flex flex-col gap-0.5 px-2'>
+			<label className='flex flex-col gap-0.5'>
 				<div className='flex items-center justify-between'>
 					<span className='text-xs opacity-70'>{param.description || param.name}</span>
 					<span className='text-xs font-mono opacity-50'>
-						{currentValue}
+						{current}
 						{param.unit && <span className='ml-0.5'>{param.unit}</span>}
 					</span>
 				</div>
 				<input
 					type='number'
 					className='input input-xs input-bordered w-full font-mono'
-					value={currentValue as number}
-					step={guessStep(param.value as number)}
+					value={current}
+					step={guessStep(param.value)}
 					onChange={(e) => {
 						const v = parseFloat(e.target.value)
-						if (!isNaN(v)) onChange(v)
+						if (!Number.isNaN(v)) onChange(v)
 					}}
 				/>
 			</label>
@@ -265,66 +457,22 @@ function ParamControl({
 	}
 
 	// String
+	const current = typeof value === 'string' ? value : param.value
 	return (
-		<label className='flex flex-col gap-0.5 px-2'>
+		<label className='flex flex-col gap-0.5'>
 			<span className='text-xs opacity-70'>{param.description || param.name}</span>
 			<input
 				type='text'
 				className='input input-xs input-bordered w-full'
-				value={currentValue as string}
+				value={current}
 				onChange={(e) => onChange(e.target.value)}
 			/>
 		</label>
 	)
 }
 
-/** Guess a reasonable step size for number inputs based on the default value */
 function guessStep(value: number): number {
 	if (Number.isInteger(value)) return 1
 	const decimals = value.toString().split('.')[1]?.length ?? 0
-	return Math.pow(10, -decimals)
-}
-
-// --- Rail navigation ---
-
-function RailToggle() {
-	return (
-		<label
-			htmlFor='param-rail'
-			className='btn btn-block btn-ghost transition-all justify-start is-rail-close:gap-0'
-			tabIndex={0}
-		>
-			<span className='transition-all is-rail-open:grow' />
-			<div className='swap is-rail-open:swap-active'>
-				<LuPanelLeftClose className='swap-on shrink-0' />
-				<LuPanelLeftOpen className='swap-off shrink-0' />
-			</div>
-		</label>
-	)
-}
-
-function RailLink({
-	href,
-	icon: Icon,
-	label,
-}: { href: string; icon: React.ComponentType<{ className?: string }>; label: string }) {
-	return (
-		<a href={href} className='btn btn-block btn-ghost transition-all justify-start is-rail-close:gap-0'>
-			<Icon className='shrink-0' />
-			<span className='overflow-hidden whitespace-nowrap transition-all is-rail-close:w-0 is-rail-close:opacity-0'>
-				{label}
-			</span>
-		</a>
-	)
-}
-
-function RailNavItem({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
-	return (
-		<label htmlFor='param-rail' className='btn btn-block btn-ghost transition-all justify-start is-rail-close:gap-0 is-rail-open:pointer-events-none is-rail-open:opacity-60' tabIndex={0}>
-			<Icon className='shrink-0' />
-			<span className='overflow-hidden whitespace-nowrap transition-all is-rail-close:w-0 is-rail-close:opacity-0'>
-				{label}
-			</span>
-		</label>
-	)
+	return 10 ** -decimals
 }
