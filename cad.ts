@@ -34,7 +34,7 @@ const PROJECTS_DIR = join(ROOT, 'src')
 // Replicad projection views: named planes for orthographic, direction vectors for isometric.
 // Isometric directions computed from OpenSCAD tetrahedral camera angles (rx, ry, rz).
 // Direction = object→camera vector (projection plane normal), not view direction.
-const REPLICAD_VIEWS: { name: string; camera: string | [number, number, number] }[] = [
+const REPLICAD_VIEWS: { name: string; camera: import('replicad').ProjectionPlane | [number, number, number] }[] = [
 	{ name: 'iso-A', camera: [-0.5774, -0.5774, 0.5774] }, // rx=54.74, rz=315
 	{ name: 'front', camera: 'front' },
 	{ name: 'iso-B', camera: [0.5774, 0.5774, 0.5774] }, // rx=54.74, rz=135
@@ -169,7 +169,12 @@ function ensureReplicad() {
 			const ocModule = await import('replicad-opencascadejs/src/replicad_single.js')
 			const opencascade = ocModule.default
 			const wasmPath = join(ROOT, 'node_modules/replicad-opencascadejs/src/replicad_single.wasm')
-			const OC = await (opencascade as any)({ locateFile: () => wasmPath })
+			// init() accepts { locateFile } at runtime but .d.ts omits it (https://github.com/sgenoud/replicad/issues/54)
+			const OC = await (
+				opencascade as unknown as (config: {
+					locateFile: () => string
+				}) => Promise<import('replicad-opencascadejs').OpenCascadeInstance>
+			)({ locateFile: () => wasmPath })
 			setOC(OC)
 		})()
 	}
@@ -196,7 +201,7 @@ async function renderReplicadProject(_unused: string, project: string, onProgres
 		const view = REPLICAD_VIEWS[i]
 		onProgress(i, total, view.name)
 
-		const cam = typeof view.camera === 'string' ? (view.camera as any) : new ProjectionCamera([0, 0, 0], view.camera)
+		const cam = typeof view.camera === 'string' ? view.camera : new ProjectionCamera([0, 0, 0], view.camera)
 		const { visible } = drawProjection(shape, cam)
 
 		let svg = visible.toSVG(5)
@@ -296,16 +301,16 @@ async function main() {
 
 	if (actions.length === 0) {
 		actions = await prompt(
-			p.multiselect({
+			p.multiselect<Action>({
 				message: 'What would you like to do?',
 				options: [
 					{
-						value: 'render' as Action,
+						value: 'render',
 						label: 'Render previews',
 						hint: '3x3 composite PNG',
 					},
 					{
-						value: 'build' as Action,
+						value: 'build',
 						label: 'Build STLs',
 						hint: 'printable .stl files',
 					},
@@ -385,7 +390,7 @@ async function main() {
 				bar.update(total, { task: label, step: chalk.green('done') })
 			} catch (err) {
 				bar.update(0, { task: label, step: chalk.red('failed') })
-				errors.push({ label, error: err as Error })
+				errors.push({ label, error: err instanceof Error ? err : new Error(String(err)) })
 			}
 			bar.stop()
 		}),

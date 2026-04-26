@@ -1,44 +1,13 @@
-# CLAUDE.md
+# cad
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Parametric OpenSCAD models for 3D printing — functional parts (hooks, clips, dowels, brackets, adapters). Prioritize structural strength, print reliability, and mechanical fit over aesthetics.
 
-## Repository Overview
-
-This is a collection of parametric OpenSCAD models for 3D printing — primarily functional parts (hooks, clips, dowels, brackets, adapters). Prioritize structural strength, print reliability, and mechanical fit over aesthetics. All projects live under `src/`, each following a standard structure:
-
-```
-src/
-└── project-name/
-    ├── src/           # source files (.scad, imported .stl, etc)
-    ├── pics/          # photos, reference images (optional)
-    ├── {name}.stl     # printable STL (built from default .scad values)
-    ├── render.png     # 3x3 composite of 9 views (3 isometric + 6 orthographic)
-    ├── CHANGELOG.md
-    └── README.md
-```
-
-### .scad File Structure
-
-```scad
-/** Header — 1-3 line description */
-
-// --- Parameter Group ---
-param = value; // [mm] Inline description
-
-// --- Computed ---
-derived = expression;
-
-module helper() { ... }
-
-module assembly() { ... }
-
-assembly();
-```
+### .scad Conventions
 
 - `// --- Group ---` sub-headers separate parameter groups and computed values
-- No section banners, no docstrings on modules — names are the documentation
+- No docstrings on modules — names are the documentation
 - Inline `// [mm]` or `// [deg]` unit annotations on parameters
-- File ends with the top-level assembly call, no heading
+- File ends with the top-level assembly call
 
 ### Design Patterns
 
@@ -59,16 +28,7 @@ offset(r=R) offset(r=-2*R) offset(r=R) { ... }
 
 ## Scripts
 
-**`./cad.ts`** — unified build & render CLI (requires `bun`). Progressive TUI: flags for non-interactive use, interactive prompts when flags are omitted.
-
-```bash
-./cad.ts --render --build usb-keychain   # render + build one project
-./cad.ts -r -b --all                     # render + build everything
-./cad.ts --build dowel c-clip            # build STLs for two projects
-./cad.ts                                 # interactive: prompts for action + projects
-```
-
-Flags: `--render`/`-r`, `--build`/`-b`, `--all`/`-a`. Runs up to 3 tasks in parallel with progress bars.
+`./cad.ts` — build & render CLI. Flags: `--render`/`-r`, `--build`/`-b`, `--all`/`-a`. Interactive when flags omitted.
 
 ## Render Layout
 
@@ -79,11 +39,3 @@ iso-C (125.26,0,45) | bottom (180,0,0)   | back  (90,0,180)
 ```
 
 Isometric angles use tetrahedral vertices (109.47° apart) for maximum angular spread.
-
-## OpenSCAD CLI
-
-```bash
-openscad path/to/file.scad                          # open in GUI
-openscad -o out.stl file.scad                        # render STL
-openscad -D 'height=50' -D 'width=30' -o out.stl f.scad  # override variables
-```
