@@ -1,6 +1,6 @@
 /** Parametric cube with fillets — first replicad test model */
 
-import { drawRoundedRectangle } from 'replicad'
+import { drawRoundedRectangle, type Shape3D } from 'replicad'
 
 // --- Parameters ---
 const width = 30 // [mm]
@@ -14,6 +14,7 @@ export default function main(overrides?: Record<string, number>) {
 	const d = overrides?.depth ?? depth
 	const h = overrides?.height ?? height
 	const f = overrides?.fillet ?? fillet
-	const shape = drawRoundedRectangle(w, d, f).sketchOnPlane().extrude(h)
-	return (shape as any).fillet(1.5)
+	// Drawing.sketchOnPlane() widens return to SketchInterface | Sketches, making .extrude() return AnyShape (https://github.com/sgenoud/replicad/issues/122)
+	const shape = drawRoundedRectangle(w, d, f).sketchOnPlane().extrude(h) as Shape3D
+	return shape.fillet(1.5)
 }
