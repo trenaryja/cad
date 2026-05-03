@@ -15,11 +15,13 @@ hanger_width = 30; // [mm] Width of extrusion (Z)
 front_thickness = 3; // [mm] Front spine wall thickness
 front_length = 30; // [mm] Minimum front spine length (grip when no front hooks)
 front_drop = 30; // [mm] Top of door to top of first front hook
+front_spine_angle = 0; // [deg] Inward tilt of front spine (positive = lean toward door)
 
 // --- Back Spine ---
 back_thickness = 3; // [mm] Back spine wall thickness
 back_length = 30; // [mm] Minimum back spine length (grip when no back hooks)
 back_drop = -1; // [mm] Top of door to top of first back hook (-1 = match front)
+back_spine_angle = 0; // [deg] Inward tilt of back spine (positive = lean toward door)
 
 // --- Front Hooks ---
 front_hook_count = 2;
@@ -82,6 +84,9 @@ back_basin_v_thick = eff_back_hook_basin_thickness / cos(eff_back_hook_angle);
 back_spine_length_raw = eff_back_drop + ((eff_back_hook_count - 1) * eff_back_hook_offset) + back_basin_v_thick + eff_back_hook_brace_height;
 eff_back_spine_length = eff_back_hook_count > 0 ? max(back_length, back_spine_length_raw) : back_length;
 
+front_spine_toe = front_spine_length * tan(front_spine_angle);
+back_spine_toe = eff_back_spine_length * tan(back_spine_angle);
+
 module hook_unit(depth, tip_height, tip_thickness, basin_thickness, angle, scoop_radius, brace_thickness, brace_height, brace_depth, brace_hollow) {
   basin_v_thick = basin_thickness / cos(angle);
   max_s = min(scoop_radius, depth - tip_thickness - 1, tip_height - 1);
@@ -122,14 +127,14 @@ module hook_unit(depth, tip_height, tip_thickness, basin_thickness, angle, scoop
 
 module hanger_bracket_profile() {
   polygon(points=[
-    [-back_thickness, -eff_back_spine_length],
+    [-back_thickness + back_spine_toe, -eff_back_spine_length],
     [-back_thickness, door_gap],
     [door_thickness + front_thickness, door_gap],
-    [door_thickness + front_thickness, -front_spine_length],
-    [door_thickness, -front_spine_length],
+    [door_thickness + front_thickness - front_spine_toe, -front_spine_length],
+    [door_thickness - front_spine_toe, -front_spine_length],
     [door_thickness, 0],
     [0, 0],
-    [0, -eff_back_spine_length],
+    [back_spine_toe, -eff_back_spine_length],
   ]);
 }
 
