@@ -15,8 +15,8 @@ import { ReplicadMesh, StlMesh, ThreeScene } from './three-scene'
 // Lazy-init the worker once
 interface WorkerApi {
 	buildModelFromImport(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<ModelData>
-	exportSTL(modelPath: string): Promise<Blob>
-	exportSTEP(modelPath: string): Promise<Blob>
+	exportSTL(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<Blob>
+	exportSTEP(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<Blob>
 }
 
 let workerApi: Remote<WorkerApi>
@@ -187,12 +187,13 @@ function ProjectViewer({ project }: { project: Project }) {
 
 	return (
 		<div className='h-screen bg-base-300 flex flex-col'>
-			<ViewerToolbar project={project} />
+			<ViewerToolbar project={project} overrides={paramState.overrides} />
 			<div className='flex-1 min-h-0'>
 				<ParamRail
 					params={paramState}
 					bodyState={bodyNames.length > 0 ? bodyState : undefined}
 					sceneSettings={sceneSettings}
+					slug={project.slug}
 				>
 					<div className='flex-1 relative'>
 						{project.type === 'replicad' ? (
@@ -228,7 +229,13 @@ function downloadBlob(blob: Blob, filename: string) {
 	URL.revokeObjectURL(url)
 }
 
-function ViewerToolbar({ project }: { project: Project }) {
+function ViewerToolbar({
+	project,
+	overrides,
+}: {
+	project: Project
+	overrides?: Record<string, number | string | boolean>
+}) {
 	const [exporting, setExporting] = useState(false)
 
 	const handleExport = async (format: 'stl' | 'step') => {
@@ -237,7 +244,9 @@ function ViewerToolbar({ project }: { project: Project }) {
 		try {
 			const worker = getWorker()
 			const blob: Blob =
-				format === 'stl' ? await worker.exportSTL(project.modelUrl) : await worker.exportSTEP(project.modelUrl)
+				format === 'stl'
+					? await worker.exportSTL(project.modelUrl, overrides)
+					: await worker.exportSTEP(project.modelUrl, overrides)
 			downloadBlob(blob, `${project.slug}.${format}`)
 		} catch (err) {
 			console.error(`Export failed:`, err)
@@ -268,6 +277,11 @@ function ViewerToolbar({ project }: { project: Project }) {
 						{exporting ? '...' : 'STEP'}
 					</button>
 				</div>
+			)}
+			{project.type === 'openscad' && project.stlUrl && (
+				<a href={project.stlUrl} download={`${project.slug}.stl`} className='btn btn-ghost btn-xs'>
+					STL
+				</a>
 			)}
 			<ThemePicker variant='popover' />
 		</div>

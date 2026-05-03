@@ -49,7 +49,9 @@ function meshShape(shape: Shape3D) {
 	}
 }
 
-type MainFn = (overrides?: Record<string, number | string | boolean>) => Shape3D | NamedShape[]
+type MainFn = (
+	overrides?: Record<string, number | string | boolean>,
+) => Shape3D | NamedShape[] | Promise<Shape3D | NamedShape[]>
 
 function callMain(mainFn: MainFn, overrides?: Record<string, number | string | boolean>) {
 	return overrides && Object.keys(overrides).length > 0 ? mainFn(overrides) : mainFn()
@@ -62,7 +64,7 @@ async function buildModelFromImport(modelPath: string, overrides?: Record<string
 	if (typeof mainFn !== 'function') {
 		throw new Error('Model must export a default function')
 	}
-	const result = callMain(mainFn, overrides)
+	const result = await Promise.resolve(callMain(mainFn, overrides))
 
 	// Multi-body: array of { name, shape }
 	if (isNamedShapeArray(result)) {
@@ -77,14 +79,14 @@ async function buildModelFromImport(modelPath: string, overrides?: Record<string
 	return { ...meshShape(result), multiBody: false }
 }
 
-async function exportSTL(modelPath: string): Promise<Blob> {
+async function exportSTL(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<Blob> {
 	await started
 	const mod = await import(/* @vite-ignore */ modelPath)
 	const mainFn = mod.default || mod.main
 	if (typeof mainFn !== 'function') {
 		throw new Error('Model must export a default function')
 	}
-	const result = callMain(mainFn)
+	const result = await Promise.resolve(callMain(mainFn, overrides))
 
 	if (isNamedShapeArray(result)) {
 		const compound = makeCompound(result.map((b) => b.shape))
@@ -93,14 +95,14 @@ async function exportSTL(modelPath: string): Promise<Blob> {
 	return result.blobSTL()
 }
 
-async function exportSTEP(modelPath: string): Promise<Blob> {
+async function exportSTEP(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<Blob> {
 	await started
 	const mod = await import(/* @vite-ignore */ modelPath)
 	const mainFn = mod.default || mod.main
 	if (typeof mainFn !== 'function') {
 		throw new Error('Model must export a default function')
 	}
-	const result = callMain(mainFn)
+	const result = await Promise.resolve(callMain(mainFn, overrides))
 
 	if (isNamedShapeArray(result)) {
 		const compound = makeCompound(result.map((b) => b.shape))

@@ -1,5 +1,14 @@
-import { useEffect, useState } from 'react'
-import { LuBox, LuGalleryHorizontalEnd, LuRotateCcw, LuSettings, LuSun, LuX } from 'react-icons/lu'
+import { useEffect, useRef, useState } from 'react'
+import {
+	LuBox,
+	LuDownload,
+	LuGalleryHorizontalEnd,
+	LuRotateCcw,
+	LuSettings,
+	LuSun,
+	LuUpload,
+	LuX,
+} from 'react-icons/lu'
 import type { ParamState } from './hooks/use-params'
 import type { SceneSettings } from './hooks/use-scene-settings'
 import { ENV_PRESETS, MATERIAL_PRESET_KEYS, MATERIAL_PRESETS } from './hooks/use-scene-settings'
@@ -13,11 +22,13 @@ export function ParamRail({
 	params,
 	bodyState,
 	sceneSettings,
+	slug,
 	children,
 }: {
 	params?: ParamState
 	bodyState?: BodyState
 	sceneSettings?: SceneSettings
+	slug?: string
 	children: React.ReactNode
 }) {
 	const [activePanel, setActivePanel] = useState<PanelId | null>(null)
@@ -81,16 +92,7 @@ export function ParamRail({
 								{activePanel === 'params' && params && (
 									<>
 										<ParamControls params={params} />
-										{hasOverrides && (
-											<button
-												type='button'
-												className='btn btn-ghost btn-xs btn-block mt-3 gap-1'
-												onClick={params.resetOverrides}
-											>
-												<LuRotateCcw className='w-3 h-3' />
-												Reset to defaults
-											</button>
-										)}
+										<ParamActions params={params} slug={slug} hasOverrides={hasOverrides} />
 									</>
 								)}
 								{activePanel === 'scene' && sceneSettings && <SceneControls settings={sceneSettings} />}
@@ -373,6 +375,67 @@ function SceneToggle({
 			/>
 			<span className='text-sm'>{label}</span>
 		</label>
+	)
+}
+
+// --- Parameter actions (export / import / reset) ---
+
+function ParamActions({
+	params,
+	slug,
+	hasOverrides,
+}: {
+	params: ParamState
+	slug?: string
+	hasOverrides: boolean | undefined
+}) {
+	const fileRef = useRef<HTMLInputElement>(null)
+
+	const handleExport = () => {
+		const values: Record<string, number | string | boolean> = {}
+		for (const p of params.params) {
+			values[p.name] = params.overrides[p.name] ?? p.value
+		}
+		const blob = new Blob([JSON.stringify(values, null, 2)], { type: 'application/json' })
+		const url = URL.createObjectURL(blob)
+		const a = document.createElement('a')
+		a.href = url
+		a.download = `${slug ?? 'params'}-params.json`
+		a.click()
+		URL.revokeObjectURL(url)
+	}
+
+	const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+		if (!file) return
+		file.text().then((text) => {
+			try {
+				params.importOverrides(JSON.parse(text))
+			} catch {
+				// ignore malformed JSON
+			}
+		})
+		e.target.value = ''
+	}
+
+	return (
+		<div className='flex gap-1 mt-3'>
+			<button type='button' className='btn btn-ghost btn-xs flex-1 gap-1' onClick={handleExport}>
+				<LuDownload className='w-3 h-3' />
+				Export
+			</button>
+			<button type='button' className='btn btn-ghost btn-xs flex-1 gap-1' onClick={() => fileRef.current?.click()}>
+				<LuUpload className='w-3 h-3' />
+				Import
+			</button>
+			<input ref={fileRef} type='file' accept='.json' className='hidden' onChange={handleImport} />
+			{hasOverrides && (
+				<button type='button' className='btn btn-ghost btn-xs flex-1 gap-1' onClick={params.resetOverrides}>
+					<LuRotateCcw className='w-3 h-3' />
+					Reset
+				</button>
+			)}
+		</div>
 	)
 }
 
