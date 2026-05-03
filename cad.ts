@@ -187,12 +187,18 @@ async function loadReplicadShape(project: string) {
 	const mod = await import(modelPath)
 	const mainFn = mod.default || mod.main
 	if (typeof mainFn !== 'function') throw new Error(`${project}/src/model.ts must export a default function`)
-	return mainFn()
+	return await mainFn()
+}
+
+function fuseAll(result: unknown) {
+	if (!Array.isArray(result)) return result as import('replicad').Shape3D
+	const shapes = result.map((item) => (item?.shape ?? item) as import('replicad').Shape3D)
+	return shapes.slice(1).reduce((acc, s) => acc.fuse(s), shapes[0])
 }
 
 async function renderReplicadProject(_unused: string, project: string, onProgress: ProgressFn) {
 	const { drawProjection, ProjectionCamera } = await import('replicad')
-	const shape = await loadReplicadShape(project)
+	const shape = fuseAll(await loadReplicadShape(project))
 	const tmp = mkdtempSync(join(tmpdir(), `cad-render-${project}-`))
 	const tiles: string[] = []
 	const total = REPLICAD_VIEWS.length + 1
