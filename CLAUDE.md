@@ -26,6 +26,16 @@ offset(r=R) offset(r=-2*R) offset(r=R) { ... }
 
 **SVG Import Pattern**: `import() → scale() → linear_extrude()` with `scale_factor = target_size / original_svg_size`.
 
+### Viewer Parameter Requirements
+
+Every user-tunable parameter in a `.scad` file **must appear in the viewer's Parameters panel**. This is a hard requirement.
+
+Rules:
+- Parameters must be declared before the `// --- Computed ---` section
+- Each parameter needs the standard format: `name = value; // [unit] description`
+- Parameters with `-1` sentinel defaults are fine — they parse as numbers and show in the UI
+- After adding or modifying parameters, verify they appear in the viewer (the parser runs on mount and on HMR `scad-update` events — a file save during dev should refresh the panel automatically; if not, do a full browser reload and confirm)
+
 ## Scripts
 
 `./cad.ts` — build & render CLI. Flags: `--render`/`-r`, `--build`/`-b`, `--all`/`-a`. Interactive when flags omitted.
