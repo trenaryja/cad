@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { discoverProjects, type Project } from './discovery'
+import { discoverProjects } from './discovery'
+import type { Project } from './discovery'
 
 export function Gallery() {
 	const projects = discoverProjects()

@@ -1,6 +1,6 @@
 /** Parse parameters from .scad and .ts model source files */
 
-interface ParamBase {
+type ParamBase = {
 	name: string
 	unit?: string
 	description?: string
@@ -8,9 +8,9 @@ interface ParamBase {
 }
 
 export type Param =
+	| (ParamBase & { type: 'boolean'; value: boolean })
 	| (ParamBase & { type: 'number'; value: number })
 	| (ParamBase & { type: 'string'; value: string })
-	| (ParamBase & { type: 'boolean'; value: boolean })
 
 /**
  * Parse parameters from a .scad source file.
@@ -22,9 +22,10 @@ function parseScadParams(source: string): Param[] {
 
 	for (const line of source.split('\n')) {
 		// Group header: // --- Group Name ---
-		const groupMatch = line.match(/^\/\/\s*---\s*(.+?)\s*---/)
+		const groupMatch = /^\/\/\s*---(.+?)---/.exec(line)
+
 		if (groupMatch) {
-			const g = groupMatch[1].trim()
+			const g = groupMatch[1]!.trim()
 			// Stop at "Computed" section — those aren't user params
 			if (/computed/i.test(g)) break
 			group = g
@@ -32,9 +33,9 @@ function parseScadParams(source: string): Param[] {
 		}
 
 		// Parameter: name = value; // [unit] description
-		const paramMatch = line.match(/^(\w+)\s*=\s*(.+?)\s*;\s*(?:\/\/\s*(.*))?$/)
+		const paramMatch = /^(\w+)\s*=([^;]+);\s*(?:\/\/(.*))?$/.exec(line)
 		if (!paramMatch) continue
-		const [, name, rawValue, comment] = paramMatch
+		const [, name = '', rawValue = '', comment] = paramMatch
 
 		// Skip $fn and other special variables
 		if (name.startsWith('$')) continue
@@ -60,11 +61,12 @@ function parseTsParams(source: string): Param[] {
 
 	for (const line of source.split('\n')) {
 		// Group header: // --- Group Name ---
-		const groupMatch = line.match(/^\/\/\s*---\s*(.+?)\s*---/)
+		const groupMatch = /^\/\/\s*---(.+?)---/.exec(line)
+
 		if (groupMatch) {
-			const g = groupMatch[1].trim()
+			const g = groupMatch[1]!.trim()
 			// Start capturing at any group, stop at "Model" or "Computed"
-			if (/model|computed/i.test(g)) break
+			if (/computed|model/i.test(g)) break
 			group = g
 			inParams = true
 			continue
@@ -77,9 +79,9 @@ function parseTsParams(source: string): Param[] {
 		if (/^export\s|^function\s|^class\s/.test(line.trim())) break
 
 		// Parameter: const name = value // [unit] description
-		const paramMatch = line.match(/^\s*(?:const|let)\s+(\w+)\s*=\s*(.+?)(?:\s*\/\/\s*(.*))?$/)
+		const paramMatch = /^\s*(?:const|let)\s+(\w+)\s*=((?:[^/]|\/(?!\/))*)(?:\/\/(.*))?$/.exec(line)
 		if (!paramMatch) continue
-		const [, name, rawValue, comment] = paramMatch
+		const [, name = '', rawValue = '', comment] = paramMatch
 
 		const parsed = parseValue(rawValue.trim())
 		if (!parsed) continue
@@ -92,9 +94,7 @@ function parseTsParams(source: string): Param[] {
 }
 
 type ParsedValue =
-	| { value: number; type: 'number' }
-	| { value: string; type: 'string' }
-	| { value: boolean; type: 'boolean' }
+	{ value: boolean; type: 'boolean' } | { value: number; type: 'number' } | { value: string; type: 'string' }
 
 function parseValue(raw: string): ParsedValue | null {
 	const trimmed = raw.trim().replace(/;$/, '')
@@ -106,34 +106,37 @@ function parseValue(raw: string): ParsedValue | null {
 
 	// Number (int or float)
 	const num = Number(trimmed)
+
 	if (!Number.isNaN(num) && trimmed !== '') {
 		return { value: num, type: 'number' }
 	}
 
 	// String (quoted)
-	const strMatch = trimmed.match(/^["'](.+?)["']$/)
+	const strMatch = /^["'](.+?)["']$/.exec(trimmed)
+
 	if (strMatch) {
-		return { value: strMatch[1], type: 'string' }
+		return { value: strMatch[1]!, type: 'string' }
 	}
 
 	return null
 }
 
 function parseComment(comment: string | undefined): { unit?: string; description?: string } {
-	if (!comment) return {}
-	const unitMatch = comment.match(/^\[([^\]]+)\]\s*(.*)$/)
-	if (unitMatch) {
-		return { unit: unitMatch[1], description: unitMatch[2] || undefined }
-	}
-	return { description: comment.trim() || undefined }
+	const trimmed = comment?.trim()
+	if (!trimmed) return {}
+	const unitMatch = /^\[([^\]]+)\]\s*(\S.*)?$/.exec(trimmed)
+
+	if (unitMatch) return { unit: unitMatch[1], description: unitMatch[2] }
+
+	return { description: trimmed }
 }
 
-export function parseParams(source: string, type: 'replicad' | 'openscad'): Param[] {
+export function parseParams(source: string, type: 'openscad' | 'replicad'): Param[] {
 	return type === 'openscad' ? parseScadParams(source) : parseTsParams(source)
 }
 
 /** Format parameter overrides as OpenSCAD -D flags */
-export function toScadOverrides(params: Record<string, number | string | boolean>): string[] {
+export function toScadOverrides(params: Record<string, boolean | number | string>): string[] {
 	return Object.entries(params).flatMap(([key, val]) => {
 		if (typeof val === 'string') return ['-D', `${key}="${val}"`]
 		return ['-D', `${key}=${val}`]

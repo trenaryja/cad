@@ -34,15 +34,15 @@ Slides over the edge of a flat object (headboard, panel, shelf) and holds fabric
 
 Edit parameters in `src/c-clip.scad`:
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `target_thickness` | Object being clipped | 25mm |
-| `tolerance` | Fit adjustment | 0mm |
-| `fabric_gap` | Space for fabric | 2.5mm |
-| `front_length` | Front arm length | 25mm |
-| `back_length` | Back arm length | 25mm |
-| `clip_width` | Width along edge | 50mm |
-| `wall` | Material thickness | 3mm |
-| `spring_angle` | Back arm inward tilt | 0° |
-| `back_texture` | 0=smooth, 1=ridges, 2=teeth | 1 |
-| `back_texture_depth` | Texture depth | 0.5mm |
+| Parameter            | Description                 | Default |
+| -------------------- | --------------------------- | ------- |
+| `target_thickness`   | Object being clipped        | 25mm    |
+| `tolerance`          | Fit adjustment              | 0mm     |
+| `fabric_gap`         | Space for fabric            | 2.5mm   |
+| `front_length`       | Front arm length            | 25mm    |
+| `back_length`        | Back arm length             | 25mm    |
+| `clip_width`         | Width along edge            | 50mm    |
+| `wall`               | Material thickness          | 3mm     |
+| `spring_angle`       | Back arm inward tilt        | 0°      |
+| `back_texture`       | 0=smooth, 1=ridges, 2=teeth | 1       |
+| `back_texture_depth` | Texture depth               | 0.5mm   |

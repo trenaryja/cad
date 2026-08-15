@@ -1,6 +1,7 @@
 /** Parametric cube with fillets — first replicad test model */
 
-import { drawRoundedRectangle, type Shape3D } from 'replicad'
+import { drawRoundedRectangle } from 'replicad'
+import type { Shape3D } from 'replicad'
 
 // --- Parameters ---
 const width = 30 // [mm]

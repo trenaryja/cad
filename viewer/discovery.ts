@@ -22,9 +22,9 @@ const scadModules = import.meta.glob<string>('../src/*/src/*.scad', {
 	eager: true,
 })
 
-export interface Project {
+export type Project = {
 	slug: string
-	type: 'replicad' | 'openscad'
+	type: 'openscad' | 'replicad'
 	thumbnail?: string
 	modelUrl?: string
 	stlUrl?: string
@@ -36,9 +36,9 @@ export function discoverProjects(): Project[] {
 
 	// Discover replicad projects (model.ts)
 	for (const [path, url] of Object.entries(modelModules)) {
-		const match = path.match(/\.\.\/src\/([^/]+)\/src\/model\.ts$/)
+		const match = /\.\.\/src\/([^/]+)\/src\/model\.ts$/.exec(path)
 		if (!match) continue
-		const slug = match[1]
+		const slug = match[1]!
 		projects.set(slug, {
 			slug,
 			type: 'replicad',
@@ -49,9 +49,10 @@ export function discoverProjects(): Project[] {
 
 	// Discover OpenSCAD projects (.scad files)
 	for (const [path, url] of Object.entries(scadModules)) {
-		const match = path.match(/\.\.\/src\/([^/]+)\/src\/[^/]+\.scad$/)
+		const match = /\.\.\/src\/([^/]+)\/src\/[^/]+\.scad$/.exec(path)
 		if (!match) continue
-		const slug = match[1]
+		const slug = match[1]!
+
 		if (!projects.has(slug)) {
 			projects.set(slug, { slug, type: 'openscad', sourceUrl: url })
 		}
@@ -59,18 +60,18 @@ export function discoverProjects(): Project[] {
 
 	// Attach thumbnails
 	for (const [path, url] of Object.entries(thumbnailModules)) {
-		const match = path.match(/\.\.\/src\/([^/]+)\/render\.png$/)
+		const match = /\.\.\/src\/([^/]+)\/render\.png$/.exec(path)
 		if (!match) continue
-		const slug = match[1]
+		const slug = match[1]!
 		const project = projects.get(slug)
 		if (project) project.thumbnail = url
 	}
 
 	// Attach STL files
 	for (const [path, url] of Object.entries(stlModules)) {
-		const match = path.match(/\.\.\/src\/([^/]+)\/[^/]+\.stl$/)
+		const match = /\.\.\/src\/([^/]+)\/[^/]+\.stl$/.exec(path)
 		if (!match) continue
-		const slug = match[1]
+		const slug = match[1]!
 		const project = projects.get(slug)
 		if (project) project.stlUrl = url
 	}

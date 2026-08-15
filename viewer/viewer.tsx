@@ -5,21 +5,24 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReplicadMeshedEdges, ReplicadMeshedFaces } from 'replicad-threejs-helper'
 import type { BufferGeometry } from 'three'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
-import { discoverProjects, type Project } from './discovery'
+import { discoverProjects } from './discovery'
+import type { Project } from './discovery'
 import { useParams } from './hooks/use-params'
-import { type SceneSettings, useSceneSettings } from './hooks/use-scene-settings'
+import { useSceneSettings } from './hooks/use-scene-settings'
+import type { SceneSettings } from './hooks/use-scene-settings'
 import { resolveColor, useThemeColors } from './hooks/use-theme-colors'
 import { ParamRail } from './param-rail'
 import { ReplicadMesh, StlMesh, ThreeScene } from './three-scene'
 
 // Lazy-init the worker once
-interface WorkerApi {
-	buildModelFromImport(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<ModelData>
-	exportSTL(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<Blob>
-	exportSTEP(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<Blob>
+type WorkerApi = {
+	buildModelFromImport: (modelPath: string, overrides?: Record<string, boolean | number | string>) => Promise<ModelData>
+	exportSTL: (modelPath: string, overrides?: Record<string, boolean | number | string>) => Promise<Blob>
+	exportSTEP: (modelPath: string, overrides?: Record<string, boolean | number | string>) => Promise<Blob>
 }
 
 let workerApi: Remote<WorkerApi>
+
 function getWorker() {
 	if (!workerApi) {
 		const w = new Worker(new URL('./worker/replicad.worker.ts', import.meta.url), {
@@ -27,16 +30,17 @@ function getWorker() {
 		})
 		workerApi = wrap<WorkerApi>(w)
 	}
+
 	return workerApi
 }
 
-interface BodyMesh {
+type BodyMesh = {
 	name: string
 	faces: ReplicadMeshedFaces
 	edges: ReplicadMeshedEdges
 }
 
-interface ModelData {
+type ModelData = {
 	multiBody: boolean
 	// Single body
 	faces?: ReplicadMeshedFaces
@@ -45,7 +49,7 @@ interface ModelData {
 	bodies?: BodyMesh[]
 }
 
-function useReplicadModel(modelUrl: string | undefined, overrides?: Record<string, number | string | boolean>) {
+function useReplicadModel(modelUrl: string | undefined, overrides?: Record<string, boolean | number | string>) {
 	const [model, setModel] = useState<ModelData | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(true)
@@ -61,13 +65,13 @@ function useReplicadModel(modelUrl: string | undefined, overrides?: Record<strin
 	useEffect(() => {
 		if (!modelUrl) return
 		if (!hasLoaded.current) setLoading(true)
-		setError(null)
 
 		const worker = getWorker()
 		const url = version > 0 ? `${modelUrl}?v=${version}` : modelUrl
 		worker
 			.buildModelFromImport(url, overrides)
 			.then((data: ModelData) => {
+				setError(null)
 				setModel(data)
 				setLoading(false)
 				hasLoaded.current = true
@@ -84,7 +88,7 @@ function useReplicadModel(modelUrl: string | undefined, overrides?: Record<strin
 function useStlModel(stlUrl: string | undefined, slug?: string) {
 	const [geometry, setGeometry] = useState<BufferGeometry | null>(null)
 	const [error, setError] = useState<string | null>(null)
-	const [loading, setLoading] = useState(true)
+	const [loading, setLoading] = useState(Boolean(stlUrl))
 	const [version, setVersion] = useState(0)
 	const [building, setBuilding] = useState(false)
 	const hasLoaded = useRef(false)
@@ -110,18 +114,15 @@ function useStlModel(stlUrl: string | undefined, slug?: string) {
 	}, [slug])
 
 	useEffect(() => {
-		if (!stlUrl) {
-			setLoading(false)
-			return
-		}
+		if (!stlUrl) return
 		if (!hasLoaded.current) setLoading(true)
-		setError(null)
 
 		const loader = new STLLoader()
 		const url = version > 0 ? `${stlUrl}?v=${version}` : stlUrl
 		loader.load(
 			url,
 			(geo) => {
+				setError(null)
 				setGeometry(geo)
 				setLoading(false)
 				hasLoaded.current = true
@@ -137,7 +138,7 @@ function useStlModel(stlUrl: string | undefined, slug?: string) {
 	return { geometry, error, loading, building }
 }
 
-interface ViewerProps {
+type ViewerProps = {
 	slug: string
 }
 
@@ -161,7 +162,7 @@ export function Viewer({ slug }: ViewerProps) {
 	return <ProjectViewer project={project} />
 }
 
-export interface BodyState {
+export type BodyState = {
 	visible: Record<string, boolean>
 	colors: Record<string, string>
 	setVisible: (name: string, visible: boolean) => void
@@ -234,13 +235,14 @@ function ViewerToolbar({
 	overrides,
 }: {
 	project: Project
-	overrides?: Record<string, number | string | boolean>
+	overrides?: Record<string, boolean | number | string>
 }) {
 	const [exporting, setExporting] = useState(false)
 
-	const handleExport = async (format: 'stl' | 'step') => {
+	const handleExport = async (format: 'step' | 'stl') => {
 		if (!project.modelUrl || exporting) return
 		setExporting(true)
+
 		try {
 			const worker = getWorker()
 			const blob: Blob =
@@ -288,17 +290,17 @@ function ViewerToolbar({
 	)
 }
 
-interface SceneViewerProps {
+type SceneViewerProps = {
 	project: Project
 	colors: import('./hooks/use-theme-colors').ThemeColors
-	overrides?: Record<string, number | string | boolean>
+	overrides?: Record<string, boolean | number | string>
 	bodyState?: BodyState
 	onBodiesDiscovered?: (names: string[]) => void
 	sceneSettings: SceneSettings
 }
 
 // Palette for multi-body models — cycles through distinct hues
-const BODY_COLORS = ['#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a7896', '#8a965a', '#965a8a']
+const BODY_COLORS = ['#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a7896', '#8a965a', '#965a8a'] as const
 
 function ReplicadViewer({
 	project,
@@ -348,7 +350,9 @@ function ReplicadViewer({
 				{model.bodies.map((body, i) => {
 					const isVisible = bodyState?.visible[body.name] !== false
 					if (!isVisible) return null
-					const bodyColor = resolveColor(bodyState?.colors[body.name] || BODY_COLORS[i % BODY_COLORS.length])
+					const bodyColor = resolveColor(
+						bodyState?.colors[body.name] ?? BODY_COLORS[i % BODY_COLORS.length] ?? BODY_COLORS[0],
+					)
 					return (
 						<ReplicadMesh
 							key={body.name}
@@ -394,11 +398,16 @@ function OpenScadViewer({ project, colors, overrides, sceneSettings }: SceneView
 	// Trigger rebuild when param overrides change
 	useEffect(() => {
 		if (!overrides || Object.keys(overrides).length === 0) return
+		const controller = new AbortController()
 		fetch('/api/scad-rebuild', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ slug: project.slug, overrides }),
-		}).catch(() => {})
+			signal: controller.signal,
+		}).catch(() => {
+			// fire-and-forget rebuild trigger; ignore network errors and aborts
+		})
+		return () => controller.abort()
 	}, [overrides, project.slug])
 
 	if (!project.stlUrl) {

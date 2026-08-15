@@ -5,7 +5,7 @@ declare global {
 	namespace React {
 		namespace JSX {
 			// R3F extends JSX with Three.js elements
-			interface IntrinsicElements extends ThreeElements {}
+			type IntrinsicElements = ThreeElements
 		}
 	}
 }

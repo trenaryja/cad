@@ -48,23 +48,29 @@ const REPLICAD_VIEWS: { name: string; camera: import('replicad').ProjectionPlane
 
 // --- Helpers ---
 
-type Action = 'render' | 'build'
-type ProjectType = 'scad' | 'replicad'
+type Action = 'build' | 'render'
+
+type ProjectType = 'replicad' | 'scad'
+
 type ProgressFn = (step: number, total: number, label: string) => void
 
-interface CLIProject {
+type CLIProject = {
 	name: string
 	type: ProjectType
 }
 
+type Task = { project: CLIProject; action: Action; label: string; total: number }
+
 const isScad = (f: string) => f.endsWith('.scad') && !/\.v\d/.test(f)
 
-async function prompt<T>(promise: Promise<T | symbol>) {
+async function prompt<T>(promise: Promise<symbol | T>) {
 	const result = await promise
+
 	if (p.isCancel(result)) {
 		p.cancel('Cancelled.')
 		process.exit(0)
 	}
+
 	return result
 }
 
@@ -105,12 +111,14 @@ async function run(cmd: string, args: string[], ignoreExit = false) {
 async function runWithConcurrency<T>(tasks: (() => Promise<T>)[], limit: number) {
 	const results: T[] = []
 	let i = 0
+
 	async function worker() {
 		while (i < tasks.length) {
 			const idx = i++
-			results[idx] = await tasks[idx]()
+			results[idx] = await tasks[idx]!()
 		}
 	}
+
 	await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, () => worker()))
 	return results
 }
@@ -124,7 +132,7 @@ async function renderProject(openscad: string, project: string, onProgress: Prog
 	const total = VIEWS.length + 1
 
 	for (let i = 0; i < VIEWS.length; i++) {
-		const view = VIEWS[i]
+		const view = VIEWS[i]!
 		onProgress(i, total, view.name)
 		const outFile = join(tmp, `${view.name}.png`)
 		await run(openscad, [
@@ -163,21 +171,20 @@ async function buildProject(openscad: string, project: string, onProgress: Progr
 let replicadReady: Promise<void> | null = null
 
 function ensureReplicad() {
-	if (!replicadReady) {
-		replicadReady = (async () => {
-			const { setOC } = await import('replicad')
-			const ocModule = await import('replicad-opencascadejs/src/replicad_single.js')
-			const opencascade = ocModule.default
-			const wasmPath = join(ROOT, 'node_modules/replicad-opencascadejs/src/replicad_single.wasm')
-			// init() accepts { locateFile } at runtime but .d.ts omits it (https://github.com/sgenoud/replicad/issues/54)
-			const OC = await (
-				opencascade as unknown as (config: {
-					locateFile: () => string
-				}) => Promise<import('replicad-opencascadejs').OpenCascadeInstance>
-			)({ locateFile: () => wasmPath })
-			setOC(OC)
-		})()
-	}
+	replicadReady ??= (async () => {
+		const { setOC } = await import('replicad')
+		const ocModule = await import('replicad-opencascadejs/src/replicad_single.js')
+		const opencascade = ocModule.default
+		const wasmPath = join(ROOT, 'node_modules/replicad-opencascadejs/src/replicad_single.wasm')
+		// init() accepts { locateFile } at runtime but .d.ts omits it (https://github.com/sgenoud/replicad/issues/54)
+		const OC = await (
+			opencascade as unknown as (config: {
+				locateFile: () => string
+			}) => Promise<import('replicad-opencascadejs').OpenCascadeInstance>
+		)({ locateFile: () => wasmPath })
+		setOC(OC)
+	})()
+
 	return replicadReady
 }
 
@@ -185,7 +192,7 @@ async function loadReplicadShape(project: string) {
 	await ensureReplicad()
 	const modelPath = join(PROJECTS_DIR, project, 'src/model.ts')
 	const mod = await import(modelPath)
-	const mainFn = mod.default || mod.main
+	const mainFn = mod.default ?? mod.main
 	if (typeof mainFn !== 'function') throw new Error(`${project}/src/model.ts must export a default function`)
 	return await mainFn()
 }
@@ -193,7 +200,8 @@ async function loadReplicadShape(project: string) {
 function fuseAll(result: unknown) {
 	if (!Array.isArray(result)) return result as import('replicad').Shape3D
 	const shapes = result.map((item) => (item?.shape ?? item) as import('replicad').Shape3D)
-	return shapes.slice(1).reduce((acc, s) => acc.fuse(s), shapes[0])
+	// A model always yields at least one body, so shapes[0] is the fuse seed.
+	return shapes.slice(1).reduce((acc, s) => acc.fuse(s), shapes[0]!)
 }
 
 async function renderReplicadProject(_unused: string, project: string, onProgress: ProgressFn) {
@@ -204,7 +212,7 @@ async function renderReplicadProject(_unused: string, project: string, onProgres
 	const total = REPLICAD_VIEWS.length + 1
 
 	for (let i = 0; i < REPLICAD_VIEWS.length; i++) {
-		const view = REPLICAD_VIEWS[i]
+		const view = REPLICAD_VIEWS[i]!
 		onProgress(i, total, view.name)
 
 		const cam = typeof view.camera === 'string' ? view.camera : new ProjectionCamera([0, 0, 0], view.camera)
@@ -260,6 +268,7 @@ function getActionFn(action: Action, projectType: ProjectType): typeof renderPro
 	if (projectType === 'replicad') {
 		return action === 'render' ? renderReplicadProject : buildReplicadProject
 	}
+
 	return action === 'render' ? renderProject : buildProject
 }
 
@@ -267,93 +276,94 @@ const actionSteps = (action: Action): number => (action === 'render' ? VIEWS.len
 
 // --- CLI ---
 
-async function main() {
-	const argv = process.argv.slice(2)
+// ./cad.ts dev — start the Vite viewer dev server. Returns true when it handled the command.
+async function maybeRunDev(argv: string[]) {
+	if (argv[0] !== 'dev') return false
+	const proc = Bun.spawn(['bun', 'run', 'dev', ...argv.slice(1)], {
+		cwd: ROOT,
+		stdio: ['inherit', 'inherit', 'inherit'],
+	})
+	process.exitCode = await proc.exited
+	return true
+}
 
-	// ./cad.ts dev — start the Vite viewer dev server
-	if (argv[0] === 'dev') {
-		const proc = Bun.spawn(['bun', 'run', 'dev', ...argv.slice(1)], {
-			cwd: ROOT,
-			stdio: ['inherit', 'inherit', 'inherit'],
-		})
-		process.exitCode = await proc.exited
-		return
-	}
-
+// Non-interactive parse of flags/positionals into actions + project names (empty ⇒ prompt later).
+function parseSelection(argv: string[], allProjects: CLIProject[]) {
 	const flags = new Set(argv.filter((a) => a.startsWith('-')))
 	const positional = argv.filter((a) => !a.startsWith('-'))
-	const allProjects = discoverProjects()
-	const projectNames = allProjects.map((p) => p.name)
+	const projectNames = allProjects.map((project) => project.name)
 
-	let actions: Action[] = []
+	const actions: Action[] = []
 	if (flags.has('--render') || flags.has('-r')) actions.push('render')
 	if (flags.has('--build') || flags.has('-b')) actions.push('build')
 
-	let selectedNames: string[] = []
-	if (flags.has('--all') || flags.has('-a')) {
-		selectedNames = projectNames
-	} else if (positional.length > 0) {
-		const unknown = positional.find((n) => !projectNames.includes(n))
-		if (unknown) {
-			console.error(`${chalk.red('error')} Unknown project: ${unknown}`)
-			console.error(`  Available: ${projectNames.join(', ')}`)
-			process.exit(1)
-		}
-		selectedNames = positional
+	if (flags.has('--all') || flags.has('-a')) return { actions, selectedNames: projectNames }
+	if (positional.length === 0) return { actions, selectedNames: [] as string[] }
+
+	const unknown = positional.find((n) => !projectNames.includes(n))
+
+	if (unknown) {
+		console.error(`${chalk.red('error')} Unknown project: ${unknown}`)
+		console.error(`  Available: ${projectNames.join(', ')}`)
+		process.exit(1)
 	}
 
-	const interactive = actions.length === 0 || selectedNames.length === 0
+	return { actions, selectedNames: positional }
+}
+
+const promptActions = () =>
+	prompt(
+		p.multiselect<Action>({
+			message: 'What would you like to do?',
+			options: [
+				{ value: 'render', label: 'Render previews', hint: '3x3 composite PNG' },
+				{ value: 'build', label: 'Build STLs', hint: 'printable .stl files' },
+			],
+			required: true,
+		}),
+	)
+
+const promptProjects = (allProjects: CLIProject[]) =>
+	prompt(
+		p.multiselect({
+			message: 'Which projects?',
+			options: allProjects.map((project) => ({
+				value: project.name,
+				label: project.name,
+				hint: project.type === 'replicad' ? '.ts' : '.scad',
+			})),
+			required: true,
+		}),
+	)
+
+// OpenSCAD is only needed for .scad projects; returns '' when none are selected.
+function resolveOpenSCAD(selected: CLIProject[], interactive: boolean) {
+	if (!selected.some((project) => project.type === 'scad')) return ''
+
+	try {
+		return findOpenSCAD()
+	} catch {
+		if (interactive) p.cancel('openscad not found. Install it first.')
+		else console.error(`${chalk.red('error')} openscad not found. Install it first.`)
+		process.exit(1)
+	}
+}
+
+async function main() {
+	const argv = process.argv.slice(2)
+	if (await maybeRunDev(argv)) return
+
+	const allProjects = discoverProjects()
+	const parsed = parseSelection(argv, allProjects)
+
+	const interactive = parsed.actions.length === 0 || parsed.selectedNames.length === 0
 	if (interactive) p.intro(chalk.bold('cad'))
 
-	if (actions.length === 0) {
-		actions = await prompt(
-			p.multiselect<Action>({
-				message: 'What would you like to do?',
-				options: [
-					{
-						value: 'render',
-						label: 'Render previews',
-						hint: '3x3 composite PNG',
-					},
-					{
-						value: 'build',
-						label: 'Build STLs',
-						hint: 'printable .stl files',
-					},
-				],
-				required: true,
-			}),
-		)
-	}
+	const actions = parsed.actions.length ? parsed.actions : await promptActions()
+	const selectedNames = parsed.selectedNames.length ? parsed.selectedNames : await promptProjects(allProjects)
 
-	if (selectedNames.length === 0) {
-		selectedNames = await prompt(
-			p.multiselect({
-				message: 'Which projects?',
-				options: allProjects.map((proj) => ({
-					value: proj.name,
-					label: proj.name,
-					hint: proj.type === 'replicad' ? '.ts' : '.scad',
-				})),
-				required: true,
-			}),
-		)
-	}
-
-	const selected = allProjects.filter((p) => selectedNames.includes(p.name))
-	const hasScad = selected.some((p) => p.type === 'scad')
-
-	// Only require OpenSCAD if there are .scad projects to process
-	let openscad = ''
-	if (hasScad) {
-		try {
-			openscad = findOpenSCAD()
-		} catch {
-			if (interactive) p.cancel('openscad not found. Install it first.')
-			else console.error(`${chalk.red('error')} openscad not found. Install it first.`)
-			process.exit(1)
-		}
-	}
+	const selected = allProjects.filter((project) => selectedNames.includes(project.name))
+	const openscad = resolveOpenSCAD(selected, interactive)
 
 	const tasks = selected.flatMap((project) =>
 		actions.map((action) => ({
@@ -364,6 +374,10 @@ async function main() {
 		})),
 	)
 
+	await runTasks(tasks, openscad, interactive)
+}
+
+async function runTasks(tasks: Task[], openscad: string, interactive: boolean) {
 	if (interactive) console.log()
 
 	const multibar = new MultiBar(
@@ -390,6 +404,7 @@ async function main() {
 			const onProgress: ProgressFn = (step, _total, stepLabel) => {
 				bar.update(step, { task: label, step: stepLabel })
 			}
+
 			try {
 				const fn = getActionFn(action, project.type)
 				await fn(openscad, project.name, onProgress)
@@ -398,6 +413,7 @@ async function main() {
 				bar.update(0, { task: label, step: chalk.red('failed') })
 				errors.push({ label, error: err instanceof Error ? err : new Error(String(err)) })
 			}
+
 			bar.stop()
 		}),
 		MAX_CONCURRENT,
@@ -420,6 +436,7 @@ main().catch((err) => {
 		console.log('\nCancelled.')
 		process.exit(0)
 	}
+
 	console.error(err)
 	process.exit(1)
 })

@@ -31,6 +31,7 @@ const DEFAULT_COLORS: ThemeColors = {
 
 // Shared off-screen canvas for CSS color → hex conversion
 let ctx: CanvasRenderingContext2D | null = null
+
 function getCtx() {
 	if (!ctx) {
 		const canvas = document.createElement('canvas')
@@ -38,6 +39,7 @@ function getCtx() {
 		canvas.height = 1
 		ctx = canvas.getContext('2d')!
 	}
+
 	return ctx
 }
 
@@ -47,7 +49,8 @@ function cssColorToHex(cssColor: string): string {
 	c.clearRect(0, 0, 1, 1)
 	c.fillStyle = cssColor
 	c.fillRect(0, 0, 1, 1)
-	const [r, g, b] = c.getImageData(0, 0, 1, 1).data
+	const [r = 0, g = 0, b = 0] = c.getImageData(0, 0, 1, 1).data
+	// eslint-disable-next-line no-bitwise -- hex color channel unpacking
 	return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`
 }
 
@@ -65,9 +68,11 @@ export function resolveColor(color: string): string {
 
 function readAllColors(): ThemeColors {
 	const colors = { ...DEFAULT_COLORS }
+
 	for (const cssVar of CSS_VARS) {
 		colors[VAR_TO_KEY[cssVar]] = cssVarToHex(cssVar)
 	}
+
 	return colors
 }
 
@@ -79,13 +84,11 @@ export function useThemeColors(): ThemeColors {
 	const [colors, setColors] = useState(DEFAULT_COLORS)
 
 	useEffect(() => {
-		// Initial read
-		setColors(readAllColors())
+		const update = () => requestAnimationFrame(() => setColors(readAllColors()))
 
-		// Watch for theme changes (data-theme attribute on <html>)
-		const observer = new MutationObserver(() => {
-			requestAnimationFrame(() => setColors(readAllColors()))
-		})
+		// Initial read, then watch for theme changes (data-theme attribute on <html>)
+		update()
+		const observer = new MutationObserver(update)
 		observer.observe(document.documentElement, {
 			attributes: true,
 			attributeFilter: ['data-theme', 'class', 'style'],

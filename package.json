@@ -5,11 +5,15 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
-		"fix": "biome check --write .",
-		"check": "tsc && biome check .",
-		"get-latest": "bun update --latest -i",
-		"reinstall": "rm -rf node_modules && rm bun.lock && bun install"
+		"fix": "prettier -w . && eslint --fix .",
+		"check": "tsc && prettier -c . && eslint .",
+		"get-latest": "bun update --latest --interactive",
+		"reinstall": "rm -rf node_modules bun.lock && bun install"
 	},
+	"prettier": "@trenaryja/config/prettier",
+	"trustedDependencies": [
+		"unrs-resolver"
+	],
 	"dependencies": {
 		"@clack/prompts": "^1.7.0",
 		"@mantine/hooks": "^9.5.1",
@@ -29,17 +33,15 @@
 		"three": "^0.185.1"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.8",
 		"@tailwindcss/vite": "^4.3.3",
+		"@trenaryja/config": "^0.0.1",
 		"@types/cli-progress": "^3.11.6",
 		"@types/react": "^19.2.18",
 		"@types/react-dom": "^19.2.4",
 		"@types/three": "^0.185.4",
 		"@vitejs/plugin-react": "^6.0.5",
-		"bun-types": "^1.3.14",
 		"daisyui": "^5.7.16",
 		"tailwindcss": "^4.3.3",
-		"typescript": "^6.0.2",
 		"vite": "^8.2.1"
 	}
 }

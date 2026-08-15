@@ -1,6 +1,7 @@
 /** TPU foot for Foxwood Lamp 2.0 E27 Base — bottom face sliced directly from STL */
 
-import { draw, drawCircle, type Shape3D } from 'replicad'
+import { draw, drawCircle } from 'replicad'
+import type { Shape3D } from 'replicad'
 
 // --- Parameters ---
 const thickness = 3 // [mm] Foot height
@@ -25,15 +26,18 @@ function sliceFlat(buffer: ArrayBuffer): [number, number][][] {
 	// Parse all triangles, track minimum Z
 	let minZ = Infinity
 	const tris: [number, number, number][][] = []
+
 	for (let i = 0; i < count; i++) {
 		const base = 84 + i * 50
 		const tri: [number, number, number][] = []
+
 		for (let v = 0; v < 3; v++) {
 			const o = base + 12 + v * 12
 			const z = view.getFloat32(o + 8, true)
 			tri.push([view.getFloat32(o, true), view.getFloat32(o + 4, true), z])
 			if (z < minZ) minZ = z
 		}
+
 		tris.push(tri)
 	}
 
@@ -42,11 +46,13 @@ function sliceFlat(buffer: ArrayBuffer): [number, number][][] {
 
 	// Boundary edges appear in exactly one triangle (interior edges appear twice and cancel)
 	const edgeSet = new Map<string, [[number, number], [number, number]]>()
+
 	for (const tri of bottom) {
 		const verts = tri.map(([x, y]) => [x, y] as [number, number])
+
 		for (let i = 0; i < 3; i++) {
-			const a = verts[i],
-				b = verts[(i + 1) % 3]
+			const a = verts[i]!
+			const b = verts[(i + 1) % 3]!
 			const ka = `${a[0].toFixed(4)},${a[1].toFixed(4)}`
 			const kb = `${b[0].toFixed(4)},${b[1].toFixed(4)}`
 			const key = ka < kb ? `${ka}|${kb}` : `${kb}|${ka}`
@@ -57,6 +63,7 @@ function sliceFlat(buffer: ArrayBuffer): [number, number][][] {
 
 	// Build undirected adjacency from boundary edges
 	const adj = new Map<string, [number, number][]>()
+
 	for (const [a, b] of edgeSet.values()) {
 		const ka = `${a[0].toFixed(4)},${a[1].toFixed(4)}`
 		const kb = `${b[0].toFixed(4)},${b[1].toFixed(4)}`
@@ -69,19 +76,23 @@ function sliceFlat(buffer: ArrayBuffer): [number, number][][] {
 	// Walk adjacency to chain boundary edges into closed loops
 	const visited = new Set<string>()
 	const loops: [number, number][][] = []
+
 	for (const startKey of adj.keys()) {
 		if (visited.has(startKey)) continue
 		const loop: [number, number][] = []
-		let cur = startKey,
-			prev: string | null = null
+		let cur = startKey
+		let prev: string | null = null
+
 		while (!visited.has(cur)) {
 			visited.add(cur)
 			loop.push(cur.split(',').map(Number) as [number, number])
-			const next = (adj.get(cur) ?? []).find((n) => `${n[0].toFixed(4)},${n[1].toFixed(4)}` !== prev)
+			const prevKey = prev
+			const next = (adj.get(cur) ?? []).find((n) => `${n[0].toFixed(4)},${n[1].toFixed(4)}` !== prevKey)
 			if (!next) break
 			prev = cur
 			cur = `${next[0].toFixed(4)},${next[1].toFixed(4)}`
 		}
+
 		if (loop.length > 2) loops.push(rdp(loop, 0.3))
 	}
 
@@ -91,22 +102,25 @@ function sliceFlat(buffer: ArrayBuffer): [number, number][][] {
 /** Ramer-Douglas-Peucker polyline simplification */
 function rdp(pts: [number, number][], eps: number): [number, number][] {
 	if (pts.length <= 2) return pts
-	const [ax, ay] = pts[0],
-		[bx, by] = pts[pts.length - 1]
-	const dx = bx - ax,
-		dy = by - ay
+	const [ax, ay] = pts[0]!
+	const [bx, by] = pts[pts.length - 1]!
+	const dx = bx - ax
+	const dy = by - ay
 	const len = Math.sqrt(dx * dx + dy * dy)
-	let maxD = 0,
-		idx = 0
+	let idx = 0
+	let maxD = 0
+
 	for (let i = 1; i < pts.length - 1; i++) {
-		const [px, py] = pts[i]
+		const [px, py] = pts[i]!
 		const d = len > 0 ? Math.abs(dy * px - dx * py + bx * ay - by * ax) / len : Math.hypot(px - ax, py - ay)
+
 		if (d > maxD) {
 			maxD = d
 			idx = i
 		}
 	}
-	if (maxD <= eps) return [pts[0], pts[pts.length - 1]]
+
+	if (maxD <= eps) return [pts[0]!, pts[pts.length - 1]!]
 	return [...rdp(pts.slice(0, idx + 1), eps).slice(0, -1), ...rdp(pts.slice(idx), eps)]
 }
 
@@ -114,7 +128,7 @@ function rdp(pts: [number, number][], eps: number): [number, number][] {
 function signedArea(pts: [number, number][]): number {
 	return (
 		pts.reduce((sum, [x1, y1], i) => {
-			const [x2, y2] = pts[(i + 1) % pts.length]
+			const [x2, y2] = pts[(i + 1) % pts.length]!
 			return sum + x1 * y2 - x2 * y1
 		}, 0) / 2
 	)
@@ -139,7 +153,7 @@ export default async function main(overrides?: Record<string, number>): Promise<
 	const holes = polygons.filter((p) => signedArea(p) < 0)
 
 	// If STL winding is reversed (all negative), flip all loops so they're usable
-	const mainLoops = outers.length ? outers : polygons.map((p) => [...p].reverse() as [number, number][])
+	const mainLoops = outers.length ? outers : polygons.map((p) => [...p].reverse())
 	const holeLoops = outers.length ? holes : []
 
 	const primary = mainLoops.reduce((a, b) => (Math.abs(signedArea(a)) >= Math.abs(signedArea(b)) ? a : b))
@@ -177,7 +191,7 @@ export default async function main(overrides?: Record<string, number>): Promise<
 				.cut(drawCircle(centerR - ridgeW / 2))
 				.sketchOnPlane('XY', t)
 				.extrude(rh) as Shape3D
-			shape = shape.fuse(ridge.intersect(clipSolid) as Shape3D) as Shape3D
+			shape = shape.fuse(ridge.intersect(clipSolid))
 		}
 	}
 

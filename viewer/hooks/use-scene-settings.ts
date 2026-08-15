@@ -2,21 +2,21 @@ import { usePersistedState } from './use-persisted-state'
 
 /** Material preset names */
 export type MaterialPreset =
-	| 'pla-matte'
-	| 'petg-glossy'
-	| 'silk-pla'
-	| 'metal'
 	| 'brushed-metal'
-	| 'copper'
-	| 'resin'
-	| 'ceramic'
-	| 'nylon'
-	| 'glass'
 	| 'carbon'
+	| 'ceramic'
 	| 'clay'
+	| 'copper'
+	| 'glass'
+	| 'metal'
+	| 'nylon'
+	| 'petg-glossy'
+	| 'pla-matte'
+	| 'resin'
+	| 'silk-pla'
 
 /** MeshPhysicalMaterial configuration for each preset */
-export interface MaterialConfig {
+export type MaterialConfig = {
 	label: string
 	roughness: number
 	metalness: number
@@ -75,11 +75,11 @@ export function materialProps(mat: MaterialConfig): Record<string, unknown> {
 }
 
 /** drei environment preset names */
-export type EnvPreset = 'studio' | 'sunset' | 'dawn' | 'warehouse'
+export type EnvPreset = 'dawn' | 'studio' | 'sunset' | 'warehouse'
 
 export const ENV_PRESETS: EnvPreset[] = ['studio', 'sunset', 'dawn', 'warehouse']
 
-export interface SceneSettings {
+export type SceneSettings = {
 	material: MaterialPreset
 	setMaterial: (m: MaterialPreset) => void
 	envPreset: EnvPreset

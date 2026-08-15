@@ -20,13 +20,13 @@ const init = async () => {
 
 const started = init()
 
-interface BodyMesh {
+type BodyMesh = {
 	name: string
 	faces: ReplicadMeshedFaces
 	edges: ReplicadMeshedEdges
 }
 
-interface NamedShape {
+type NamedShape = {
 	name: string
 	shape: Shape3D
 }
@@ -50,20 +50,22 @@ function meshShape(shape: Shape3D) {
 }
 
 type MainFn = (
-	overrides?: Record<string, number | string | boolean>,
-) => Shape3D | NamedShape[] | Promise<Shape3D | NamedShape[]>
+	overrides?: Record<string, boolean | number | string>,
+) => NamedShape[] | Promise<NamedShape[] | Shape3D> | Shape3D
 
-function callMain(mainFn: MainFn, overrides?: Record<string, number | string | boolean>) {
+function callMain(mainFn: MainFn, overrides?: Record<string, boolean | number | string>) {
 	return overrides && Object.keys(overrides).length > 0 ? mainFn(overrides) : mainFn()
 }
 
-async function buildModelFromImport(modelPath: string, overrides?: Record<string, number | string | boolean>) {
+async function buildModelFromImport(modelPath: string, overrides?: Record<string, boolean | number | string>) {
 	await started
 	const mod = await import(/* @vite-ignore */ modelPath)
-	const mainFn = mod.default || mod.main
+	const mainFn = mod.default ?? mod.main
+
 	if (typeof mainFn !== 'function') {
 		throw new Error('Model must export a default function')
 	}
+
 	const result = await Promise.resolve(callMain(mainFn, overrides))
 
 	// Multi-body: array of { name, shape }
@@ -79,35 +81,41 @@ async function buildModelFromImport(modelPath: string, overrides?: Record<string
 	return { ...meshShape(result), multiBody: false }
 }
 
-async function exportSTL(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<Blob> {
+async function exportSTL(modelPath: string, overrides?: Record<string, boolean | number | string>): Promise<Blob> {
 	await started
 	const mod = await import(/* @vite-ignore */ modelPath)
-	const mainFn = mod.default || mod.main
+	const mainFn = mod.default ?? mod.main
+
 	if (typeof mainFn !== 'function') {
 		throw new Error('Model must export a default function')
 	}
+
 	const result = await Promise.resolve(callMain(mainFn, overrides))
 
 	if (isNamedShapeArray(result)) {
 		const compound = makeCompound(result.map((b) => b.shape))
 		return compound.blobSTL()
 	}
+
 	return result.blobSTL()
 }
 
-async function exportSTEP(modelPath: string, overrides?: Record<string, number | string | boolean>): Promise<Blob> {
+async function exportSTEP(modelPath: string, overrides?: Record<string, boolean | number | string>): Promise<Blob> {
 	await started
 	const mod = await import(/* @vite-ignore */ modelPath)
-	const mainFn = mod.default || mod.main
+	const mainFn = mod.default ?? mod.main
+
 	if (typeof mainFn !== 'function') {
 		throw new Error('Model must export a default function')
 	}
+
 	const result = await Promise.resolve(callMain(mainFn, overrides))
 
 	if (isNamedShapeArray(result)) {
 		const compound = makeCompound(result.map((b) => b.shape))
 		return compound.blobSTEP()
 	}
+
 	return result.blobSTEP()
 }
 

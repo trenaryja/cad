@@ -11,94 +11,38 @@ You help users create MakerWorld 3D model post folders with proper structure, do
 
 ```json
 {
-  "3D Printer": ["3D Printer Accessories", "3D Printer Parts", "Test Models"],
-  "Art": [
-    "2D Art",
-    "Coin & Badges",
-    "Signs & Logos",
-    "Sculptures",
-    "Other Art Models"
-  ],
-  "Education": [
-    "Biology",
-    "Chemistry",
-    "Engineering",
-    "Geography",
-    "Mathematics",
-    "Physics & Astronomy",
-    "Other Education Models"
-  ],
-  "Fashion": [
-    "Bags",
-    "Clothes",
-    "Earrings",
-    "Footwear",
-    "Glasses",
-    "Jewelry",
-    "Rings",
-    "Other Fashion Models"
-  ],
-  "Hobby & DIY": [
-    "Electronics",
-    "Music",
-    "RC",
-    "Robotics",
-    "Sport & Outdoors",
-    "Vehicles",
-    "Other Hobby & DIY"
-  ],
-  "Household": [
-    "Decor",
-    "Festivities",
-    "Garden",
-    "Office",
-    "Pets",
-    "Other House Models"
-  ],
-  "Miniatures": [
-    "Animals",
-    "Architecture",
-    "Creatures",
-    "People",
-    "Other Miniatures"
-  ],
-  "Props & Cosplays": [
-    "Costumes",
-    "Masks & Helmets",
-    "Cosplay Weapons",
-    "Other Props & Cosplays"
-  ],
-  "Tools": [
-    "Gadgets",
-    "Hand Tools",
-    "Machine Tools",
-    "Measure Tools",
-    "Medical Tools",
-    "Organizers",
-    "Other Tools"
-  ],
-  "Toys & Games": [
-    "Board Games",
-    "Characters",
-    "Outdoor Toys",
-    "Puzzles",
-    "Construction Sets",
-    "Other Toys & Games"
-  ],
-  "Generative 3D Model": [
-    "Hueforge & Lithophane",
-    "Make My Sign",
-    "Make My Vase",
-    "Pixel Puzzle Maker",
-    "Relief Sculpture Maker",
-    "AI Scanner",
-    "Image to Keychain",
-    "Make My Desk Organizer",
-    "PrintMon Maker",
-    "Statue Maker",
-    "Christmas Ornament Maker",
-    "Make My Lantern"
-  ]
+	"3D Printer": ["3D Printer Accessories", "3D Printer Parts", "Test Models"],
+	"Art": ["2D Art", "Coin & Badges", "Signs & Logos", "Sculptures", "Other Art Models"],
+	"Education": [
+		"Biology",
+		"Chemistry",
+		"Engineering",
+		"Geography",
+		"Mathematics",
+		"Physics & Astronomy",
+		"Other Education Models"
+	],
+	"Fashion": ["Bags", "Clothes", "Earrings", "Footwear", "Glasses", "Jewelry", "Rings", "Other Fashion Models"],
+	"Hobby & DIY": ["Electronics", "Music", "RC", "Robotics", "Sport & Outdoors", "Vehicles", "Other Hobby & DIY"],
+	"Household": ["Decor", "Festivities", "Garden", "Office", "Pets", "Other House Models"],
+	"Miniatures": ["Animals", "Architecture", "Creatures", "People", "Other Miniatures"],
+	"Props & Cosplays": ["Costumes", "Masks & Helmets", "Cosplay Weapons", "Other Props & Cosplays"],
+	"Tools": ["Gadgets", "Hand Tools", "Machine Tools", "Measure Tools", "Medical Tools", "Organizers", "Other Tools"],
+	"Toys & Games": ["Board Games", "Characters", "Outdoor Toys", "Puzzles", "Construction Sets", "Other Toys & Games"],
+	"Generative 3D Model": [
+		"Hueforge & Lithophane",
+		"Make My Sign",
+		"Make My Vase",
+		"Pixel Puzzle Maker",
+		"Relief Sculpture Maker",
+		"AI Scanner",
+		"Image to Keychain",
+		"Make My Desk Organizer",
+		"PrintMon Maker",
+		"Statue Maker",
+		"Christmas Ornament Maker",
+		"Make My Lantern"
+	]
 }
 ```
 

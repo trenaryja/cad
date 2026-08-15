@@ -12,6 +12,7 @@ You help the user scaffold and generate a new parametric 3D model project in thi
 The user provides a project name as an argument (e.g. `/new-model hook-holder`). If no name is given, ask for one. The name should be lowercase and hyphenated.
 
 Also ask (or infer from context) which engine to use:
+
 - **OpenSCAD** (default): Traditional CSG modeling with `.scad` files
 - **replicad**: TypeScript BREP modeling with `.ts` files — better for fillets, lofts, and complex surfaces. Preview in browser via `./cad.ts dev`
 
@@ -47,6 +48,7 @@ find . -path '*/src/*.scad' -not -name '*.v[0-9]*'
 ```
 
 Read each file. Pay attention to:
+
 - Parameter naming conventions (snake_case, grouped with `// --- Group ---`)
 - How modules are structured and named
 - Design patterns used (profile extrusion, offset tricks, boolean ops)
@@ -90,12 +92,14 @@ assembly();
 ```
 
 **Simple version (`{name}-simple.scad`):**
+
 - Core geometry only — get the shape right
 - All key parameters defined and annotated
 - Minimal modules, straightforward construction
 - Should be valid and renderable
 
 **Detailed version (`{name}.scad`):**
+
 - Full parametric design using the repo's design patterns
 - Dual-fillet offset trick where appropriate
 - Geometric safeguards (min/max clamping)
@@ -127,8 +131,8 @@ Follow the pattern from existing projects:
 
 ## Customization
 
-| Parameter | Default | Description |
-| --- | --- | --- |
+| Parameter    | Default | Description      |
+| ------------ | ------- | ---------------- |
 | `param_name` | `value` | What it controls |
 ```
 
@@ -140,6 +144,7 @@ Follow the pattern from existing projects:
 ## [0.1.0] - {today's date YYYY-MM-DD}
 
 ### Added
+
 - Initial generated design with simple and detailed variants
 - {list key features}
 ```
@@ -177,6 +182,7 @@ openscad /Users/justin/Git/cad/src/{name}/src/{name}-simple.scad &
 ## Step 6: Present Results
 
 Show the user:
+
 1. The render images (use the Read tool to display render.png and render-simple.png)
 2. A brief summary of the two versions and their key differences
 3. Ask which version they'd like to use as the starting point for iteration
@@ -213,25 +219,24 @@ src/{name}/
 ```typescript
 /** Brief description of the model */
 
-import { drawRoundedRectangle } from "replicad";
+import { drawRoundedRectangle } from 'replicad'
 
 // --- Parameters ---
-const width = 30; // [mm]
-const height = 20; // [mm]
+const width = 30 // [mm]
+const height = 20 // [mm]
 
 // --- Computed ---
-const halfWidth = width / 2;
+const halfWidth = width / 2
 
 // --- Model ---
 export default function main() {
-  // Build and return geometry
-  return drawRoundedRectangle(width, height)
-    .sketchOnPlane()
-    .extrude(10);
+	// Build and return geometry
+	return drawRoundedRectangle(width, height).sketchOnPlane().extrude(10)
 }
 ```
 
 Key rules:
+
 - `export default function main()` must return the geometry — no side effects
 - Parameters at top with `// [mm]` or `// [deg]` annotations
 - Same `// --- Group ---` section headers as .scad files
@@ -240,6 +245,7 @@ Key rules:
 ### Replicad API Quick Reference
 
 Common operations for generating models:
+
 - `drawRoundedRectangle(w, h, r)` — rounded rect sketch
 - `drawCircle(r)` — circle sketch
 - `draw()` — freeform 2D path (`.hLine()`, `.vLine()`, `.line()`, `.close()`)

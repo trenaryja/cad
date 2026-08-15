@@ -43,6 +43,7 @@ export function ParamRail({
 		const handler = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') setActivePanel(null)
 		}
+
 		window.addEventListener('keydown', handler)
 		return () => window.removeEventListener('keydown', handler)
 	}, [])
@@ -167,7 +168,7 @@ const SWATCH_VARS = [
 	{ var: '--color-base-300', label: 'Base 300' },
 ]
 
-interface Swatch {
+type Swatch = {
 	hex: string
 	label: string
 	cssVar: string
@@ -178,10 +179,9 @@ function readSwatchColors(): Swatch[] {
 }
 
 function useSwatchColors() {
-	const [swatches, setSwatches] = useState<Swatch[]>([])
+	const [swatches, setSwatches] = useState<Swatch[]>(readSwatchColors)
 
 	useEffect(() => {
-		setSwatches(readSwatchColors())
 		const observer = new MutationObserver(() => {
 			requestAnimationFrame(() => setSwatches(readSwatchColors()))
 		})
@@ -196,7 +196,7 @@ function useSwatchColors() {
 }
 
 // Palette for multi-body — matches BODY_COLORS in viewer.tsx
-const BODY_COLORS = ['#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a7896', '#8a965a', '#965a8a']
+const BODY_COLORS = ['#5a8296', '#96785a', '#7a5a96', '#5a9672', '#96605a', '#5a7896', '#8a965a', '#965a8a'] as const
 
 function BodyControls({ bodyState }: { bodyState: BodyState }) {
 	const swatches = useSwatchColors()
@@ -206,7 +206,7 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 		<div className='flex flex-col gap-1.5'>
 			{bodyState.bodyNames.map((name, i) => {
 				const visible = bodyState.visible[name] !== false
-				const rawColor = bodyState.colors[name] || BODY_COLORS[i % BODY_COLORS.length]
+				const rawColor = bodyState.colors[name] ?? BODY_COLORS[i % BODY_COLORS.length] ?? BODY_COLORS[0]
 				const resolvedColor = resolveColor(rawColor)
 				const isExpanded = expandedBody === name
 
@@ -292,12 +292,15 @@ function SceneControls({ settings }: { settings: SceneSettings }) {
 			<section>
 				<span className='text-xs font-semibold opacity-50 uppercase tracking-wider'>Lighting</span>
 				<div className='flex flex-col gap-2 mt-1.5'>
-					<label className='flex flex-col gap-0.5'>
+					<div className='flex flex-col gap-0.5'>
 						<div className='flex items-center justify-between'>
-							<span className='text-xs opacity-70'>Direct</span>
+							<label htmlFor='light-direct' className='text-xs opacity-70'>
+								Direct
+							</label>
 							<span className='text-xs font-mono opacity-50'>{settings.lightIntensity.toFixed(1)}</span>
 						</div>
 						<input
+							id='light-direct'
 							type='range'
 							className='range range-xs'
 							min={0}
@@ -306,13 +309,16 @@ function SceneControls({ settings }: { settings: SceneSettings }) {
 							value={settings.lightIntensity}
 							onChange={(e) => settings.setLightIntensity(parseFloat(e.target.value))}
 						/>
-					</label>
-					<label className='flex flex-col gap-0.5'>
+					</div>
+					<div className='flex flex-col gap-0.5'>
 						<div className='flex items-center justify-between'>
-							<span className='text-xs opacity-70'>Ambient</span>
+							<label htmlFor='light-ambient' className='text-xs opacity-70'>
+								Ambient
+							</label>
 							<span className='text-xs font-mono opacity-50'>{settings.ambientIntensity.toFixed(1)}</span>
 						</div>
 						<input
+							id='light-ambient'
 							type='range'
 							className='range range-xs'
 							min={0}
@@ -321,7 +327,7 @@ function SceneControls({ settings }: { settings: SceneSettings }) {
 							value={settings.ambientIntensity}
 							onChange={(e) => settings.setAmbientIntensity(parseFloat(e.target.value))}
 						/>
-					</label>
+					</div>
 				</div>
 			</section>
 
@@ -392,10 +398,12 @@ function ParamActions({
 	const fileRef = useRef<HTMLInputElement>(null)
 
 	const handleExport = () => {
-		const values: Record<string, number | string | boolean> = {}
+		const values: Record<string, boolean | number | string> = {}
+
 		for (const p of params.params) {
 			values[p.name] = params.overrides[p.name] ?? p.value
 		}
+
 		const blob = new Blob([JSON.stringify(values, null, 2)], { type: 'application/json' })
 		const url = URL.createObjectURL(blob)
 		const a = document.createElement('a')
@@ -443,8 +451,9 @@ function ParamActions({
 
 function ParamControls({ params }: { params: ParamState }) {
 	const groups = new Map<string, Param[]>()
+
 	for (const p of params.params) {
-		const list = groups.get(p.group) || []
+		const list = groups.get(p.group) ?? []
 		list.push(p)
 		groups.set(p.group, list)
 	}
@@ -476,8 +485,8 @@ function ParamControl({
 	onChange,
 }: {
 	param: Param
-	value: number | string | boolean | undefined
-	onChange: (v: number | string | boolean) => void
+	value: boolean | number | string | undefined
+	onChange: (v: boolean | number | string) => void
 }) {
 	if (param.type === 'boolean') {
 		const checked = typeof value === 'boolean' ? value : param.value
@@ -497,15 +506,18 @@ function ParamControl({
 	if (param.type === 'number') {
 		const current = typeof value === 'number' ? value : param.value
 		return (
-			<label className='flex flex-col gap-0.5'>
+			<div className='flex flex-col gap-0.5'>
 				<div className='flex items-center justify-between'>
-					<span className='text-xs opacity-70'>{param.description || param.name}</span>
+					<label htmlFor={`param-${param.name}`} className='text-xs opacity-70'>
+						{param.description ?? param.name}
+					</label>
 					<span className='text-xs font-mono opacity-50'>
 						{current}
 						{param.unit && <span className='ml-0.5'>{param.unit}</span>}
 					</span>
 				</div>
 				<input
+					id={`param-${param.name}`}
 					type='number'
 					className='input input-xs input-bordered w-full font-mono'
 					value={current}
@@ -515,7 +527,7 @@ function ParamControl({
 						if (!Number.isNaN(v)) onChange(v)
 					}}
 				/>
-			</label>
+			</div>
 		)
 	}
 
@@ -523,7 +535,7 @@ function ParamControl({
 	const current = typeof value === 'string' ? value : param.value
 	return (
 		<label className='flex flex-col gap-0.5'>
-			<span className='text-xs opacity-70'>{param.description || param.name}</span>
+			<span className='text-xs opacity-70'>{param.description ?? param.name}</span>
 			<input
 				type='text'
 				className='input input-xs input-bordered w-full'

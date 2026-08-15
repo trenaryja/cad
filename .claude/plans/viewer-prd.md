@@ -38,6 +38,7 @@ src/
 All deps live in the root `package.json`. `bun dev` or `./cad.ts dev` from repo root starts the viewer. `./cad.ts` continues to work as before for CLI rendering/building.
 
 **Replicad model file convention** (mirrors `.scad` conventions from CLAUDE.md):
+
 ```typescript
 // src/{name}/src/model.ts
 /** Brief description of the model */
@@ -46,16 +47,14 @@ import { drawRoundedRectangle } from 'replicad'
 
 // --- Parameters ---
 const height = 50 // [mm]
-const width = 30  // [mm]
+const width = 30 // [mm]
 
 // --- Computed ---
 const halfWidth = width / 2
 
 // --- Model ---
 export default function main() {
-  return drawRoundedRectangle(width, height)
-    .sketchOnPlane()
-    .extrude(10)
+	return drawRoundedRectangle(width, height).sketchOnPlane().extrude(10)
 }
 ```
 
@@ -64,6 +63,7 @@ export default function main() {
 **Routing**: Hash-based (`#/` = gallery, `#/project/{slug}` = viewer). No react-router needed.
 
 **Rendering pipeline**:
+
 - Replicad: worker loads WASM → evaluates model.ts → calls `.mesh()` / `.meshEdges()` → transfers BufferGeometry data to main thread → `replicad-threejs-helper` syncs to Three.js
 - OpenSCAD: loads pre-built `{name}.stl` via Three.js `STLLoader`
 
@@ -116,6 +116,7 @@ Note: `vite-plugin-wasm` and `vite-plugin-top-level-await` are NOT needed — Vi
 - [x] `src/test-cube/README.md` — minimal readme
 
 **Verification:** ✅
+
 - `bun install && bun dev` starts Vite dev server from repo root
 - Browser shows a 3D cube with smooth BREP fillets
 - OrbitControls work (rotate, pan, zoom)
@@ -128,6 +129,7 @@ Note: `vite-plugin-wasm` and `vite-plugin-top-level-await` are NOT needed — Vi
 - [x] `viewer/main.tsx` — hash router: `#/` → gallery, `#/project/{slug}` → viewer
 
 **Verification:** ✅
+
 - Gallery shows all 8 projects (7 OpenSCAD + 1 replicad) with thumbnails
 - Search filters by project name
 - Clicking a replicad project opens interactive 3D viewer
@@ -141,17 +143,18 @@ Note: `vite-plugin-wasm` and `vite-plugin-top-level-await` are NOT needed — Vi
 - [x] render.png generation for replicad projects via CLI (uses `drawProjection` → SVG → `rsvg-convert` → ImageMagick montage)
 
 **Verification:** ✅
+
 - OpenSCAD projects render their pre-built STL in 3D viewer
 - All projects are interactively viewable
 - Wireframe and grid toggles work
 
 ### Phase 4: Stretch Goals
 
-- [ ] **OpenSCAD WASM**: Live `.scad` editing → WASM compilation → STL → Three.js (no dependency on pre-built STL) — *deferred: requires heavyweight separate WASM build*
+- [ ] **OpenSCAD WASM**: Live `.scad` editing → WASM compilation → STL → Three.js (no dependency on pre-built STL) — _deferred: requires heavyweight separate WASM build_
 - [x] **CLI integration**: `./cad.ts dev` starts the Vite server
 - [x] **Replicad scaffold skill**: extended `/new-model` skill to scaffold replicad projects with `model.ts` convention
 - [x] **Export**: STL/STEP export buttons in viewer toolbar for replicad models (via worker `blobSTL()`/`blobSTEP()`)
-- [ ] **Parameter UI**: auto-generate sliders from model parameters (parse `// [mm]` annotations) — *deferred: requires model source parsing*
+- [ ] **Parameter UI**: auto-generate sliders from model parameters (parse `// [mm]` annotations) — _deferred: requires model source parsing_
 
 ### Phase 5: Live Reload + CLI Rendering (added post-initial implementation)
 

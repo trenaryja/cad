@@ -3,18 +3,20 @@ import { readdirSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, type Plugin, type ViteDevServer } from 'vite'
+import { defineConfig } from 'vite'
+import type { Plugin, ViteDevServer } from 'vite'
 
 function modelHmr(): Plugin {
 	const scadBuilds = new Map<string, AbortController>()
 	let viteServer: ViteDevServer
 
-	function buildScad(slug: string, overrides?: Record<string, number | string | boolean>) {
+	function buildScad(slug: string, overrides?: Record<string, boolean | number | string>) {
 		const projectDir = resolve('src', slug)
 		const srcDir = resolve(projectDir, 'src')
 
 		// Find the .scad file in src/
 		let scadFile: string | undefined
+
 		try {
 			const files = readdirSync(srcDir)
 			const scad = files.find((f) => f.endsWith('.scad') && !f.includes('.v'))
@@ -22,6 +24,7 @@ function modelHmr(): Plugin {
 		} catch {
 			return
 		}
+
 		if (!scadFile) return
 
 		const stlFile = resolve(projectDir, `${slug}.stl`)
@@ -35,12 +38,14 @@ function modelHmr(): Plugin {
 
 		// Build -D flags from overrides
 		const args = ['-o', stlFile]
+
 		if (overrides) {
 			for (const [key, val] of Object.entries(overrides)) {
 				if (typeof val === 'string') args.push('-D', `${key}="${val}"`)
 				else args.push('-D', `${key}=${val}`)
 			}
 		}
+
 		args.push(scadFile)
 
 		const proc = spawn('openscad', args, { signal: controller.signal })

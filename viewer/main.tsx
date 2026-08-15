@@ -12,9 +12,9 @@ import 'replicad-opencascadejs/src/replicad_single.wasm?url'
 type Route = { page: 'gallery' } | { page: 'viewer'; slug: string }
 
 function parseHash(): Route {
-	const hash = window.location.hash
-	const match = hash.match(/^#\/project\/(.+)$/)
-	if (match) return { page: 'viewer', slug: match[1] }
+	const { hash } = window.location
+	const match = /^#\/project\/(.+)$/.exec(hash)
+	if (match) return { page: 'viewer', slug: match[1]! }
 	return { page: 'gallery' }
 }
 
@@ -30,6 +30,7 @@ function App() {
 	if (route.page === 'viewer') {
 		return <Viewer slug={route.slug} />
 	}
+
 	return <Gallery />
 }
 

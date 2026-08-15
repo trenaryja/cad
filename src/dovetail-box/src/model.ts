@@ -1,6 +1,7 @@
 /** Two-piece snap box — multi-body demo with interlocking lid */
 
-import { drawRoundedRectangle, type Shape3D } from 'replicad'
+import { drawRoundedRectangle } from 'replicad'
+import type { Shape3D } from 'replicad'
 
 // --- Parameters ---
 const width = 60 // [mm] Box width

@@ -1,6 +1,6 @@
 import { Bounds, Environment, OrbitControls } from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import type { ReplicadMeshedEdges, ReplicadMeshedFaces } from 'replicad-threejs-helper'
 import { syncFaces, syncLines } from 'replicad-threejs-helper'
 import * as THREE from 'three'
@@ -14,7 +14,7 @@ THREE.Object3D.DEFAULT_UP.set(0, 0, 1)
 const BED_X = 256
 const BED_Y = 256
 
-interface ThreeSceneProps {
+type ThreeSceneProps = {
 	children: React.ReactNode
 	showBuildPlate?: boolean
 	colors: ThemeColors
@@ -103,7 +103,7 @@ function BuildPlate({ colors }: { colors: ThemeColors }) {
 	)
 }
 
-interface ReplicadMeshProps {
+type ReplicadMeshProps = {
 	faces: ReplicadMeshedFaces
 	edges: ReplicadMeshedEdges
 	wireframe?: boolean
@@ -122,30 +122,29 @@ export function ReplicadMesh({
 	material = 'pla-matte',
 	showEdges = true,
 }: ReplicadMeshProps) {
-	const bodyRef = useRef(new THREE.BufferGeometry())
-	const linesRef = useRef(new THREE.BufferGeometry())
+	const [bodyGeometry] = useState(() => new THREE.BufferGeometry())
+	const [linesGeometry] = useState(() => new THREE.BufferGeometry())
 	const { invalidate } = useThree()
 
 	useEffect(() => {
-		if (faces) syncFaces(bodyRef.current, faces)
-		if (edges) syncLines(linesRef.current, edges)
+		if (faces) syncFaces(bodyGeometry, faces)
+		if (edges) syncLines(linesGeometry, edges)
 		invalidate()
-	}, [faces, edges, invalidate])
+	}, [faces, edges, invalidate, bodyGeometry, linesGeometry])
 
-	useEffect(() => {
-		const body = bodyRef.current
-		const lines = linesRef.current
-		return () => {
-			body.dispose()
-			lines.dispose()
-		}
-	}, [])
+	useEffect(
+		() => () => {
+			bodyGeometry.dispose()
+			linesGeometry.dispose()
+		},
+		[bodyGeometry, linesGeometry],
+	)
 
 	const mat = MATERIAL_PRESETS[material]
 
 	return (
 		<group>
-			<mesh geometry={bodyRef.current}>
+			<mesh geometry={bodyGeometry}>
 				<meshPhysicalMaterial
 					color={color ?? '#5a8296'}
 					wireframe={wireframe}
@@ -156,7 +155,7 @@ export function ReplicadMesh({
 				/>
 			</mesh>
 			{showEdges && (
-				<lineSegments geometry={linesRef.current}>
+				<lineSegments geometry={linesGeometry}>
 					<lineBasicMaterial color={edgeColor ?? '#3c5a6e'} />
 				</lineSegments>
 			)}
@@ -164,7 +163,7 @@ export function ReplicadMesh({
 	)
 }
 
-interface StlMeshProps {
+type StlMeshProps = {
 	geometry: THREE.BufferGeometry
 	wireframe?: boolean
 	color?: string

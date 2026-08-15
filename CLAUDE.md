@@ -14,6 +14,7 @@ Parametric OpenSCAD models for 3D printing — functional parts (hooks, clips, d
 **Side-Profile Extrusion**: Build as 2D profiles (XY plane), then `linear_extrude()`. Optimizes for side printing without overhangs.
 
 **Dual-Fillet Offset Trick**: Smooths both internal and external corners:
+
 ```scad
 offset(r=R) offset(r=-2*R) offset(r=R) { ... }
 ```
@@ -31,6 +32,7 @@ offset(r=R) offset(r=-2*R) offset(r=R) { ... }
 Every user-tunable parameter in a `.scad` file **must appear in the viewer's Parameters panel**. This is a hard requirement.
 
 Rules:
+
 - Parameters must be declared before the `// --- Computed ---` section
 - Each parameter needs the standard format: `name = value; // [unit] description`
 - Parameters with `-1` sentinel defaults are fine — they parse as numbers and show in the UI
