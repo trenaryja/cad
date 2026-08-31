@@ -54,7 +54,7 @@ function useReplicadModel(modelUrl: string | undefined, overrides?: Record<strin
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [version, setVersion] = useState(0)
-	const hasLoaded = useRef(false)
+	const hasLoadedRef = useRef(false)
 
 	// Listen for custom HMR event from model-hmr Vite plugin
 	useEffect(() => {
@@ -64,7 +64,7 @@ function useReplicadModel(modelUrl: string | undefined, overrides?: Record<strin
 
 	useEffect(() => {
 		if (!modelUrl) return
-		if (!hasLoaded.current) setLoading(true)
+		if (!hasLoadedRef.current) setLoading(true)
 
 		const worker = getWorker()
 		const url = version > 0 ? `${modelUrl}?v=${version}` : modelUrl
@@ -74,7 +74,7 @@ function useReplicadModel(modelUrl: string | undefined, overrides?: Record<strin
 				setError(null)
 				setModel(data)
 				setLoading(false)
-				hasLoaded.current = true
+				hasLoadedRef.current = true
 			})
 			.catch((err: Error) => {
 				setError(err.message)
@@ -91,7 +91,7 @@ function useStlModel(stlUrl: string | undefined, slug?: string) {
 	const [loading, setLoading] = useState(Boolean(stlUrl))
 	const [version, setVersion] = useState(0)
 	const [building, setBuilding] = useState(false)
-	const hasLoaded = useRef(false)
+	const hasLoadedRef = useRef(false)
 
 	// Listen for OpenSCAD HMR events
 	useEffect(() => {
@@ -115,7 +115,7 @@ function useStlModel(stlUrl: string | undefined, slug?: string) {
 
 	useEffect(() => {
 		if (!stlUrl) return
-		if (!hasLoaded.current) setLoading(true)
+		if (!hasLoadedRef.current) setLoading(true)
 
 		const loader = new STLLoader()
 		const url = version > 0 ? `${stlUrl}?v=${version}` : stlUrl
@@ -125,7 +125,7 @@ function useStlModel(stlUrl: string | undefined, slug?: string) {
 				setError(null)
 				setGeometry(geo)
 				setLoading(false)
-				hasLoaded.current = true
+				hasLoadedRef.current = true
 			},
 			undefined,
 			(err) => {

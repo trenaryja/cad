@@ -6,16 +6,12 @@ import opencascade from 'replicad-opencascadejs/src/replicad_single.js'
 import opencascadeWasm from 'replicad-opencascadejs/src/replicad_single.wasm?url'
 import type { ReplicadMeshedEdges, ReplicadMeshedFaces } from 'replicad-threejs-helper'
 
-let loaded = false
-
 const init = async () => {
-	if (loaded) return
 	// init() accepts { locateFile } at runtime but .d.ts omits it (https://github.com/sgenoud/replicad/issues/54)
 	const OC = await (opencascade as unknown as (config: { locateFile: () => string }) => Promise<OpenCascadeInstance>)({
 		locateFile: () => opencascadeWasm,
 	})
 	setOC(OC)
-	loaded = true
 }
 
 const started = init()

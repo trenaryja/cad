@@ -50,7 +50,6 @@ function cssColorToHex(cssColor: string): string {
 	c.fillStyle = cssColor
 	c.fillRect(0, 0, 1, 1)
 	const [r = 0, g = 0, b = 0] = c.getImageData(0, 0, 1, 1).data
-	// eslint-disable-next-line no-bitwise -- hex color channel unpacking
 	return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`
 }
 

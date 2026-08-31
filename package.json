@@ -6,7 +6,7 @@
 		"dev": "vite",
 		"build": "vite build",
 		"fix": "prettier -w . && eslint --fix .",
-		"check": "tsc && prettier -c . && eslint .",
+		"check": "tsc && prettier -c . && eslint . --max-warnings=0",
 		"get-latest": "bun update --latest --interactive",
 		"reinstall": "rm -rf node_modules bun.lock && bun install"
 	},
@@ -34,7 +34,7 @@
 	},
 	"devDependencies": {
 		"@tailwindcss/vite": "^4.3.3",
-		"@trenaryja/config": "^0.0.1",
+		"@trenaryja/config": "^0.0.4",
 		"@types/cli-progress": "^3.11.6",
 		"@types/react": "^19.2.18",
 		"@types/react-dom": "^19.2.4",

@@ -13,6 +13,7 @@ const gap = 0.15 // [mm] Clearance between parts
 const corner = 3 // [mm] Corner radius
 
 // --- Model ---
+// eslint-disable-next-line complexity -- 14 of its 15 branch points are the ?./?? override defaulting; no control flow to split
 export default function main(overrides?: Record<string, number>) {
 	const w = overrides?.width ?? width
 	const d = overrides?.depth ?? depth
