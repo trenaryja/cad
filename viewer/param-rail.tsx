@@ -416,13 +416,10 @@ function ParamActions({
 	const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (!file) return
-		file.text().then((text) => {
-			try {
-				params.importOverrides(JSON.parse(text))
-			} catch {
-				// ignore malformed JSON
-			}
-		})
+		file
+			.text()
+			.then((text) => params.importOverrides(JSON.parse(text)))
+			.catch((error: unknown) => console.error('Param import failed:', error))
 		e.target.value = ''
 	}
 
