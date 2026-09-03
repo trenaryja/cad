@@ -3,5 +3,6 @@
 	"compilerOptions": {
 		"types": ["bun", "vite/client"]
 	},
-	"include": ["viewer", "src/*/src/model.ts", "vite.config.ts", "cad.ts"]
+	"include": ["**/*.ts", "**/*.tsx"],
+	"exclude": ["node_modules", "dist"]
 }
