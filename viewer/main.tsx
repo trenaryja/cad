@@ -7,7 +7,7 @@ import { Gallery } from './gallery'
 import { Viewer } from './viewer'
 
 // Workaround: ensure Vite includes the WASM asset in the build
-import 'replicad-opencascadejs/src/replicad_single.wasm?url'
+import 'replicad-opencascadejs/wasm?url'
 
 type Route = { page: 'gallery' } | { page: 'viewer'; slug: string }
 

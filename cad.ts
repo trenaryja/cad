@@ -173,15 +173,9 @@ let replicadReady: Promise<void> | null = null
 function ensureReplicad() {
 	replicadReady ??= (async () => {
 		const { setOC } = await import('replicad')
-		const ocModule = await import('replicad-opencascadejs/src/replicad_single.js')
-		const opencascade = ocModule.default
-		const wasmPath = join(ROOT, 'node_modules/replicad-opencascadejs/src/replicad_single.wasm')
-		// init() accepts { locateFile } at runtime but .d.ts omits it (https://github.com/sgenoud/replicad/issues/54)
-		const OC = await (
-			opencascade as unknown as (config: {
-				locateFile: () => string
-			}) => Promise<import('replicad-opencascadejs').OpenCascadeInstance>
-		)({ locateFile: () => wasmPath })
+		const { default: opencascade } = await import('replicad-opencascadejs')
+		const wasmPath = join(ROOT, 'node_modules/replicad-opencascadejs/dist/replicad_single.wasm')
+		const OC = await opencascade({ locateFile: () => wasmPath })
 		setOC(OC)
 	})()
 

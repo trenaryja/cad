@@ -1,16 +1,12 @@
 import { expose } from 'comlink'
 import type { Shape3D } from 'replicad'
 import { makeCompound, setOC } from 'replicad'
-import type { OpenCascadeInstance } from 'replicad-opencascadejs'
-import opencascade from 'replicad-opencascadejs/src/replicad_single.js'
-import opencascadeWasm from 'replicad-opencascadejs/src/replicad_single.wasm?url'
+import opencascade from 'replicad-opencascadejs'
+import opencascadeWasm from 'replicad-opencascadejs/wasm?url'
 import type { ReplicadMeshedEdges, ReplicadMeshedFaces } from 'replicad-threejs-helper'
 
 const init = async () => {
-	// init() accepts { locateFile } at runtime but .d.ts omits it (https://github.com/sgenoud/replicad/issues/54)
-	const OC = await (opencascade as unknown as (config: { locateFile: () => string }) => Promise<OpenCascadeInstance>)({
-		locateFile: () => opencascadeWasm,
-	})
+	const OC = await opencascade({ locateFile: () => opencascadeWasm })
 	setOC(OC)
 }
 
