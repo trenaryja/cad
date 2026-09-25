@@ -1,8 +1,9 @@
 import { spawn } from 'node:child_process'
 import { readdirSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
+import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
-import react from '@vitejs/plugin-react'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import type { Plugin, ViteDevServer } from 'vite'
 
@@ -130,7 +131,7 @@ function modelHmr(): Plugin {
 }
 
 export default defineConfig({
-	plugins: [react(), tailwindcss(), modelHmr()],
+	plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss(), modelHmr()],
 	optimizeDeps: {
 		exclude: ['replicad-opencascadejs'],
 	},
