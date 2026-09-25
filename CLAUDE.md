@@ -38,6 +38,12 @@ Rules:
 - Parameters with `-1` sentinel defaults are fine — they parse as numbers and show in the UI
 - After adding or modifying parameters, verify they appear in the viewer (the parser runs on mount and on HMR `scad-update` events — a file save during dev should refresh the panel automatically; if not, do a full browser reload and confirm)
 
+### replicad
+
+- Model lives at `src/<name>/src/model.ts` -> viewer globs exactly that path
+- Export the geometry-returning function as `default` or `main` -> the worker calls nothing else
+- Preview: `./cad.ts dev` -> `http://localhost:5173/#/project/<name>`
+
 ## Scripts
 
 `./cad.ts` — build & render CLI. Flags: `--render`/`-r`, `--build`/`-b`, `--all`/`-a`. Interactive when flags omitted.
