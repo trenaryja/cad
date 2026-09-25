@@ -85,7 +85,7 @@ export function ParamRail({
 									{panelTitles[activePanel]}
 								</span>
 								<button type='button' className='btn btn-ghost btn-xs btn-square' onClick={() => setActivePanel(null)}>
-									<LuX className='w-3.5 h-3.5' />
+									<LuX className='size-3.5' />
 								</button>
 							</div>
 							<div className='flex-1 overflow-y-auto p-3'>
@@ -122,7 +122,7 @@ function NavLink({
 }) {
 	return (
 		<a href={href} className='btn btn-ghost btn-square btn-sm' title={tooltip}>
-			<Icon className='w-4 h-4' />
+			<Icon className='size-4' />
 		</a>
 	)
 }
@@ -145,7 +145,7 @@ function NavButton({
 			className={`btn btn-ghost btn-square btn-sm relative ${active ? 'bg-base-300' : ''}`}
 			title={tooltip}
 		>
-			<Icon className='w-4 h-4' />
+			<Icon className='size-4' />
 			{active && <div className='absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary' />}
 		</button>
 	)
@@ -223,7 +223,7 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 							<span className='text-sm truncate flex-1'>{name}</span>
 							<button
 								type='button'
-								className='w-5 h-5 rounded-full border-2 border-neutral/30 cursor-pointer shrink-0 transition-transform hover:scale-110'
+								className='size-5 rounded-full border-2 border-neutral/30 cursor-pointer shrink-0 transition-transform hover:scale-110'
 								style={{ backgroundColor: resolvedColor }}
 								onClick={() => setExpandedBody(isExpanded ? null : name)}
 								title='Change color'
@@ -239,7 +239,7 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 											key={swatch.label}
 											type='button'
 											title={swatch.label}
-											className='w-5 h-5 rounded-full border border-neutral/20 cursor-pointer transition-transform hover:scale-125'
+											className='size-5 rounded-full border border-neutral/20 cursor-pointer transition-transform hover:scale-125'
 											style={{
 												backgroundColor: swatch.hex,
 												outline: rawColor === swatch.cssVar ? '2px solid var(--color-primary)' : undefined,
@@ -253,7 +253,7 @@ function BodyControls({ bodyState }: { bodyState: BodyState }) {
 								</div>
 								<input
 									type='color'
-									className='w-full h-7 cursor-pointer rounded border border-neutral/20 p-0'
+									className='w-full h-7 cursor-pointer rounded-sm border border-neutral/20 p-0'
 									value={resolvedColor}
 									onChange={(e) => bodyState.setColor(name, e.target.value)}
 								/>
@@ -426,17 +426,17 @@ function ParamActions({
 	return (
 		<div className='flex gap-1 mt-3'>
 			<button type='button' className='btn btn-ghost btn-xs flex-1 gap-1' onClick={handleExport}>
-				<LuDownload className='w-3 h-3' />
+				<LuDownload className='size-3' />
 				Export
 			</button>
 			<button type='button' className='btn btn-ghost btn-xs flex-1 gap-1' onClick={() => fileRef.current?.click()}>
-				<LuUpload className='w-3 h-3' />
+				<LuUpload className='size-3' />
 				Import
 			</button>
 			<input ref={fileRef} type='file' accept='.json' className='hidden' onChange={handleImport} />
 			{hasOverrides && (
 				<button type='button' className='btn btn-ghost btn-xs flex-1 gap-1' onClick={params.resetOverrides}>
-					<LuRotateCcw className='w-3 h-3' />
+					<LuRotateCcw className='size-3' />
 					Reset
 				</button>
 			)}

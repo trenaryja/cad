@@ -1,8 +1,1 @@
-{
-	"extends": "@trenaryja/config/tsconfig/vite",
-	"compilerOptions": {
-		"types": ["bun", "vite/client"]
-	},
-	"include": ["**/*.ts", "**/*.tsx"],
-	"exclude": ["node_modules", "dist"]
-}
+{ "extends": "@trenaryja/config/tsconfig/vite" }
